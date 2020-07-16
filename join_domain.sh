@@ -1,20 +1,25 @@
 #!/usr/bin/env bash
 
-# Description: LDAP client with sssd authentification (also works with ubuntu)
-# Author: Choops <choopsbd@gmail.com>
+description="LDAP client with sssd authentification"
+author="Choops <choopsbd@gmail.com>"
 
-error="\e[31mERROR\e[0m:"
-done="\e[32mDONE\e[0m:"
+c0="\e[0m"
+ce="\e[31m"
+cf="\e[32m"
+ci="\e[36m"
+
+error="${ce}Error${c0}:"
+done="${cf}Done${c0}:"
 
 set -e
-trap 'echo -e "${error} \"\e[33m${BASH_COMMAND}\e[0m\" (line ${LINENO}) failed with exit code $?"' ERR
 
 usage(){
-    echo -e "USAGE:\n  './$(basename "$0") [OPTIONS]' as root or using 'sudo'"
-    echo -e "\n  OPTIONS:"
-    echo "    -h|--help:                      Print this help"
-    echo "    -d|--domain [<ADMIN>@]<DOMAIN>: Define domain (with admin login. Default admin: 'administrator')"
-    exit "${err}"
+    echo -e "${ci}${description}${c0}"
+    echo -e "${ci}Usage${c0}:\n  './$(basename "$0") [OPTIONS]' as root or using 'sudo'"
+    echo -e "${ci}Options${c0}:"
+    echo "  -h|--help:                      Print this help"
+    echo "  -d|--domain [<ADMIN>@]<DOMAIN>: Define domain (with admin login. Default admin: 'administrator')"
+    echo
 }
 
 fix_dns(){
@@ -24,17 +29,13 @@ fix_dns(){
         echo -e "[main]\ndns=none" > "${nodns_conf}"
     fi
 
-    if [[ -L /etc/resolv.conf ]]; then
-        mv /etc/resolv.conf /etc/resolv.conf.o
-    fi
+    [[ -L /etc/resolv.conf ]] && mv /etc/resolv.conf /etc/resolv.conf.o
 
     if ! (grep -qs "${domain}" /etc/resolv.conf); then
         echo -e "domain ${domain}\nsearch ${domain}\nnameserver ${dns_ip}" > /etc/resolv.conf
     fi
 
-    if (dpkg -l | grep -q network-manager); then
-        systemctl restart NetworkManager
-    fi
+    dpkg -l | grep -q network-manager && systemctl restart NetworkManager
 }
 
 configure_ntp(){
@@ -51,8 +52,9 @@ configure_samba(){
 }
 
 configure_autocreate_user_home(){
-    (grep -qs "skel" /etc/pam.d/common-session) || \
+    if ! (grep -qs "skel" /etc/pam.d/common-session); then
         echo "session    required    pam_mkhomedir.so skel=/etc/skel/ umask=0022" >> /etc/pam.d/common-session
+    fi
 }
 
 join_domain(){
@@ -71,45 +73,39 @@ configure_sssd(){
     systemctl restart sssd
 }
 
-err=0
-
 scriptpath="$(dirname "$(realpath "$0")")"
 resourcespath="$(dirname "${scriptpath}")"/resources
 confpath="${resourcespath}"/templates
 
-[[ $(whoami) != root ]] && echo "${error} Need higher privileges." && err=1 && usage
+[[ $(whoami) != root ]] && echo "${error} Need higher privileges." && usage && exit 1
 
-[[ $# -gt 2 ]] && echo -e "${error} Too many arguments" && err=1 && usage
+[[ $# -gt 2 ]] && echo -e "${error} Too many arguments" && usage && exit 1
 
 adminlogin=administrator
-if [[ $# -gt 0 ]]; then
-    case $1 in
-    -h|--help)   usage ;;
+case $1 in
+    -h|--help)
+        usage && exit 0 ;;
     -d|--domain) 
-        if [[ $# -gt 1 ]]; then
-            if [[ $2 =~ [@] ]]; then
-                adm=${2%@*}
-                dom=${2##*@}
-                if [[ ${adm} =~ ^[a-z][-a-z0-9]*\$ ]]; then
-                    adminlogin="${adm}"
-                else
-                    echo -e "${error} '${adm}' is not a valid username" && err=1 && usage
-                fi
-                if [[ ${dom} =~ ^[a-z][-a-z0-9.]*[a-z]$ ]] && [[ ${dom} =~ [.] ]]; then
-                    domain=${dom}
-                else
-                    echo -e "${error} '${dom}' is not a valid domain name" && err=1 && usage
-                fi
-            elif [[ $2 =~ ^[a-z][-a-z0-9.]*[a-z]$ ]] && [[ $2 =~ [.] ]]; then
-                domain=$2
+        if [[ $2 =~ [@] ]]; then
+            adm=${2%@*}
+            dom=${2##*@}
+            if [[ ${adm} =~ ^[a-z][-a-z0-9]*\$ ]]; then
+                adminlogin="${adm}"
             else
-                echo -e "${error} '$2' is not a valid domain name" && err=1 && usage
+                echo -e "${error} '${adm}' is not a valid username" && usage && exit 1
             fi
+            if [[ ${dom} =~ ^[a-z][-a-z0-9.]*[a-z]$ ]] && [[ ${dom} =~ [.] ]]; then
+                domain="${dom}"
+            else
+                echo -e "${error} '${dom}' is not a valid domain name" && usage && exit 1
+            fi
+        elif [[ $2 =~ ^[a-z][-a-z0-9.]*[a-z]$ ]] && [[ $2 =~ [.] ]]; then
+            domain="$2"
         else
-            echo -e "${error} No domain set" && err=1 && usage
+            echo -e "${error} '$2' is not a valid domain name" && usage && exit 1
         fi ;;
     *)
-        echo -e "${error} Bad argument" && err=1 && usage
+        echo -e "${error} Bad argument" && usage && exit 1 ;;
 esac
 
 apt-get install -y \

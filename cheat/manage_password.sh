@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Author: Choops <choopsbd@gmail.com>
+author="Choops <choopsbd@gmail.com>"
 
 err=0
 

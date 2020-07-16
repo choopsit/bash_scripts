@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Author: Choops <choopsbd@gmail.com>
+author="Choops <choopsbd@gmail.com>"
 
 echo -e "\\\e[0m:\t\e[0mDefault\e[0m"
 echo -e "\\\e[30m:\t\e[30mBlack\e[0m"
