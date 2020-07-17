@@ -2,20 +2,22 @@
 
 author="Choops <choopsbd@gmail.com>"
 
-err=0
+c0="\e[0m"
+ce="\e[31m"
+cf="\e[32m"
+ci="\e[36m"
 
-error="\e[31mERROR\e[0m:"
-done="\e[32mDONE\e[0m:"
-info="\e[36mINFO\e[0m:"
+error="${ce}Error${c0}:"
+done="${cf}Done${c0}:"
 
 usage(){
-    echo -e "USAGE: './$(basename "$0") [OPITONS]' as root or using 'sudo'"
-    echo -e "\n  OPTIONS:"
+    echo -e "${ci}Usage${c0}:\n  './$(basename "$0") [OPITONS]' as root or using 'sudo'"
+    echo -e "${ci}Options${c0}:"
     echo "    -h|--help:         Print this help"
     echo "    -u <USERNAME>:     Set username"
     echo "    -o <OLD_PASSWORD>: Give old password"
     echo "    -n <NEW_PASSWORD>: Set new password"
-    exit "${err}"
+    echo
 }
 
 set_username(){
@@ -84,6 +86,6 @@ fi
 [[ ${oldpassword} ]] || { read -p "Old password: " -sr oldpassword && echo ; }
 [[ ${password} ]] || set_password
 
-echo -e "\e[36mUser:\e[0m         ${myuser}"
-echo -e "\e[36mOld password:\e[0m ${oldpassword}"
-echo -e "\e[36mPassword:\e[0m     ${password}"
+echo -e "${ci}User${c0}:         ${myuser}"
+echo -e "${ci}Old password${c0}: ${oldpassword}"
+echo -e "${ci}Password${c0}:     ${password}"

@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 
-# Author: Choops <choopsbd@gmail.com>
+author="Choops <choopsbd@gmail.com>"
 
-error="\e[31mERROR\e[0m:"
+c0="\e[0m"
+ce="\e[31m"
+
+error="${ce}Error${c0}:"
 
 read -p "Y(es) or N(o)? " -rn1 yesno
 [[ ! ${yesno} ]] || echo

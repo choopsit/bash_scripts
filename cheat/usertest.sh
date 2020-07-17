@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 
-# Author: Choops <choopsbd@gmail.com>
+author="Choops <choopsbd@gmail.com>"
 
-echo "current user: $USER"
+c0="\e[0m"
+ci="\e[36m"
+
+echo "${ci}Current user${c0}: $USER"
 
 if [[ $SUDO_USER ]] ;then
-    echo "using sudo"
+    echo "Using 'sudo'"
     myuser="$SUDO_USER"
 else
     if [[ $(whoami) = root ]]; then
@@ -15,4 +18,4 @@ else
     fi
 fi
 
-echo "myuser: ${myuser}"
+echo "${ci}Real user${c0}:    ${myuser}"
