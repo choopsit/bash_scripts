@@ -11,12 +11,13 @@ error="${ce}Error${c0}:"
 done="${cf}Done${c0}:"
 
 usage(){
-    echo -e "${ci}Usage${c0}:\n  './$(basename "$0") [OPITONS]' as root or using 'sudo'"
+    echo -e "${ci}Usage${c0}:"
+    echo "  './$(basename "$0") [-h|[-u USERNAME [-o OLDPASSWORD [-n NEWPASSWORD]]]]' as root or using 'sudo'"
     echo -e "${ci}Options${c0}:"
-    echo "    -h|--help:         Print this help"
-    echo "    -u <USERNAME>:     Set username"
-    echo "    -o <OLD_PASSWORD>: Give old password"
-    echo "    -n <NEW_PASSWORD>: Set new password"
+    echo "    -h|--help:             Print this help"
+    echo "    -u|--user USERNAME:    Set username"
+    echo "    -o|--old OLD_PASSWORD: Give old password"
+    echo "    -n|--new NEW_PASSWORD: Set new password"
     echo
 }
 
@@ -46,42 +47,23 @@ oldpassword=""
 password=""
 
 if [[ $# -gt 0 ]]; then
-    arg=($@)
-    for i in $(seq 0 $(($#-1))); do
-        case ${arg[$i]} in
-            -h|--help)
-                usage ;;
-            -u)
-                if [[ ${arg[$((i+1))]} ]] && [[ ! ${arg[$((i+1))]} =~ ^-[huon]$ ]]; then
-                    myuser=${arg[$((i+1))]}
-                else
-                    echo -e "${error} No username given" && err=1 && usage
-                fi
-                ;;
-            -o)
-                if [[ ${arg[$((i+1))]} ]] && [[ ! ${arg[$((i+1))]} =~ ^-[huon]$ ]]; then
-                    oldpassword=${arg[$((i+1))]}
-                else
-                    echo -e "${error} No old password given" && err=1 && usage
-                fi
-                ;;
-            -n)
-                if [[ ${arg[$((i+1))]} ]] && [[ ! ${arg[$((i+1))]} =~ ^-[huon]$ ]]; then
-                    password=${arg[$((i+1))]}
-                else
-                    echo -e "${error} No new password given" && err=1 && usage
-                fi
-                ;;
-            *)
-                echo -e "${error} Bad argument" ;;
-        esac
-    done
+    case $1 in
+        -h|--help)
+            usage && exit 0 ;;
+        -u|--user)
+            myuser="$2"
+            [[ $3 =~ ^(-o|--old)+$ ]] && oldpassword="$4"
+            [[ $5 =~ ^(-n|--new)+$ ]] && password="$6" ;;
+        *)
+            echo -e "${error} Bad argument" && usage && exit 1 ;;
+    esac
+
 fi
 
 [[ ${myuser} ]] || set_username
 [[ ! ${myuser} =~ ^[-a-zA-Z0-9]+$ ]] && echo -e "${error} '${myuser}' is not a valid username" && exit 1
 if ! (getent passwd | grep -q ^"${myuser}:x"); then
-    echo -e "${error} Unknown username '${myuser}'" && exit 1
+    echo -e "${error} Unknown username '${myuser}' on '$(hostname)'" && exit 1
 fi
 [[ ${oldpassword} ]] || { read -p "Old password: " -sr oldpassword && echo ; }
 [[ ${password} ]] || set_password
