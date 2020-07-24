@@ -36,7 +36,9 @@ prerequisites(){
 pick_naming_infos(){
     myhostname=$(hostname -s)
     fqdn=$(hostname -f)
-    [[ ${fqdn} =~ [*.*] ]] && show_fqdn="\n${ci}FQDN${c0}:     ${fqdn}"
+    if [[ ${fqdn} =~ [*.*] ]]; then
+        show_fqdn="\n${ci}FQDN${c0}:     ${fqdn}"
+    fi
 }
 
 list_interfaces(){
