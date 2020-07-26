@@ -1,0 +1,19 @@
+#!/bin/sh
+
+# build script harivpn-amd64
+# author: Choops <choopsbd@gmail.com>
+
+set -e
+
+lb config noauto \
+    --architectures "amd64" \
+    --distribution "sid" \
+    --linux-flavours "amd64" \
+    --archive-areas "main contrib non-free" \
+    --linux-packages "linux-image" \
+    --firmware-binary "true" \
+    --firmware-chroot "true" \
+    --ignore-system-defaults \
+    --bootappend-live "boot=live persistence components autologin username=liveuser \
+        keyboard-layouts=fr keyboard-model=pc105 timezone=Europe/Paris utc=yes" \
+    "${@}"
