@@ -14,7 +14,7 @@ ci="\e[36m"
 error="${ce}Error${c0}:"
 done="${cf}Done${c0}:"
 
-#set -e
+set -e
 
 usage(){
     echo -e "${ci}${description}${c0}"
@@ -94,10 +94,10 @@ create_usbkey(){
     sync
 
     echo -e "${ci}Adding persistent part...${c0}"
+    wipefs "/dev/${device}"
     fdisk "/dev/${device}" <<<$'n\np\n\n\n\nw'
-    partprobe <<<$'y'
     sync
-    mkfs.ext4 -L persistence "/dev/${device}3"
+    mkfs.ext4 -FL persistence "/dev/${device}3"
     mount "/dev/${device}3" /mnt && echo "/ union" >/mnt/persistence.conf
     umount /mnt
     sync
@@ -121,21 +121,13 @@ case $1 in
             case $3 in
                 -c|--codename)
                     codename_test "$4"
-                    if [[ $5 ]]; then
-                        case $5 in
-                            -u|--user) username_test "$6" ;;
-                            *) bad_arg_exit ;;
-                        esac
-                    fi
+                    [[ $5 ]] && [[ ! $5 =~ ^(-u|--user) ]] && bad_arg_exit
+                    [[ $5 ]] && username_test "$6"
                     ;;
                 -u|--user)
                     username_test "$4"
-                    if [[ $5 ]]; then
-                        case $5 in
-                            -c|--codename) codename_test "$6" ;;
-                            *) bad_arg_exit ;;
-                        esac
-                    fi
+                    [[ $5 ]] && [[ ! $5 =~ ^(-c|--codename) ]] && bad_arg_exit
+                    [[ $5 ]] && codename_test "$6"
                     ;;
                 *)
                     bad_arg_exit

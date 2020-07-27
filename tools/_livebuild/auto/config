@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# build script harivpn-amd64
+# build script for mysid-live-amd64.iso
 # author: Choops <choopsbd@gmail.com>
 
 set -e
