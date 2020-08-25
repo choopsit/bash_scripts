@@ -16,145 +16,164 @@ done="${cf}Done${c0}:"
 
 set -e
 
+#exec 5> "${scriptpath}/$(date "+%y%m%d-%H")"_DEBUG.log
+#BASH_XTRACEFD="5"
+#PS4='$LINENO: '
+#set -xv
+
 usage(){
     echo -e "${ci}${description}${c0}"
     echo -e "${ci}Usage${c0}:"
-    echo "  './$(basename "$0") <-h|-t <DEVICE> [-c <CODENAME>] [-u <USERNAME>]>'"
-    echo -e "${ci}Options${c0}:"
-    echo "  -h|--help:                Print this help"
-    echo "  -t|--target <DEVICE>:     Define targeted device (ex: 'sdb')"
-    echo "  -c|--codename <CODENAME>: Define Debian version to put on flash drive [default: 'buster']"
-    echo "  -u|--user <USERNAME>:     Define username [default: 'liveuser']"
+    echo "  './$(basename "$0") [OPTIONS] <TARGET>' as root or using 'sudo'"
+    echo -e "  ${cw}TARGET${c0}: targeted device (ex: 'sdb')"
+    echo -e "${ci}Options${c0}"
+    echo "  --help:        Print this help"
+    echo "  -c <CODENAME>: Define Debian version [default: 'sid']"
+    echo "  -u <USERNAME>: Define live session username [default: 'liveuser']"
+    echo "  -h <HOSTNAME>: Define live support hostname [default: 'sid-custom']"
+    echo
 }
 
-bad_arg_exit(){
+badarg_exit(){
     echo -e "${error} Bad argument" && usage && exit 1
 }
 
-target_test(){
-    tgt="$1"
-    [[ ! ${tgt} ]] && echo -e "${error} No device given" && exit 1
-    [[ ! -e /dev/"${tgt}" ]] && echo -e "${error} '${tgt}' is not available" && exit 1
-    [[ ${tgt} != sd* ]] && echo -e "${error} '${tgt}' is not a valid drive name" && exit 1
-    grep -qs "^/dev/${tgt}" /proc/mounts && echo -e "${error} '${tgt}' is mounted" && exit 1
-    device="${tgt}"
+test_target(){
+    mytarget="$1"
+    [[ ! ${mytarget} ]] && echo -e "${error} No target given" && exit 1
+    [[ ! -e /dev/"${mytarget}" ]] && echo -e "${error} '${mytarget}' is not available" && exit 1
+    [[ ${mytarget} != sd* ]] && echo -e "${error} '${mytarget}' is not a valid drive name" && exit 1
+    grep -qs "^/dev/${mytarget}" /proc/mounts && echo -e "${error} '${mytarget}' is mounted" && exit 1
+    target="${mytarget}"
 }
 
-codename_test(){
-    cn="$1"
-    for cnok in "${codenameok[@]}"; do
-        [[ ${cn} = ${cnok} ]] && codename="${cn}" && break
+test_codename(){
+    mycodename="$1"
+    for mycodenameok in "${codenameok[@]}"; do
+        [[ ${mycodename} = ${mycodenameok} ]] && codename="${mycodename}" && break
     done
     if [[ ! ${codename} ]]; then
-        echo -e "${error} Invalid Dedian codename '${cn}'" && exit 1
+        echo -e "${error} '${mycodename}' is not a valid codename" && exit 1
     fi
 }
 
-username_test(){
-    usr="$1"
-    [[ ${usr} =~ ^[-a-zA-Z0-9]+$ ]] && username="${usr}"
+test_username(){
+    myusername="$1"
+    [[ ${myusername} =~ ^[a-z]+[a-z0-9-]+[a-z0-9]$ ]] && username="${myusername}"
     if [[ ! ${username} ]]; then
-        echo -e "${error} Invalid username '${usr}'" && exit 1
+        echo -e "${error} '${myusername}' is not a valid username" && exit 1
     fi
+}
+
+test_hostname(){
+    hn="$1"
+    [[ ${hn} =~ ^[a-z0-9]+[a-z0-9-]+[a-z0-9]$ ]] && hostname="${hn}"
+    [[ ${#hn} -le 2 ]] && [[ ${hn} =~ ^[a-z0-9]+$ ]] && hostname="${hn}"
+    if [[ ! ${hostname} ]]; then
+        echo -e "${error} '${hn}' is not a valid hostname" && exit 1
+    fi
+}
+
+confirm_conf(){
+    [[ ${codename} ]] || codename=sid
+    [[ ${username} ]] || username=liveuser
+    [[ ${hostname} ]] || hostname=${codename}-custom
+
+    echo -e "${ci}Codename${c0}: ${codename}"
+    echo -e "${ci}Username${c0}: ${username}"
+    echo -e "${ci}Hostname${c0}: ${hostname}"
+    echo -e "${ci}Target${c0}:   ${target}"
+    read -p "Go [y/N] ? " -rn1 okgo
+    [[ ${okgo} ]] && echo
+    [[ ${okgo} =~ [yY] ]] || exit 0
 }
 
 prerequisites(){
-    for pkg in live-build live-manual live-tools; do
-        dpkg -l | grep -q "${pkg}" || apt install -yy "${pkg}"
+    for pkg in isolinux live-build live-manual live-tools; do
+        dpkg -l | grep -q "${pkg}" || pkglist+=("${pkg}")
     done
+    if [[ ${#pkglist[@]} -gt 0 ]]; then
+        apt install -yy "${pkglist[@]}"
+    fi
 }
 
-build_image(){
+build_iso(){
+    echo -e "${cw}Grab a tea. It will take some time...${c0}" && sleep 1
     echo -e "${ci}Preparing build...${c0}"
-    workfolder="${scriptpath}/livebuild_$(date "+%y%m%d-%H")"
 
-    [[ -e "${workfolder}" ]] && rm -rf "${workfolder}"
+    workfolder="${scriptpath}/_${codename}_livebuild_$(date "+%y%m%d-%H")"
+    [[ -d "${workfolder}" ]] && rm -rf "${workfolder}"
     mkdir -p "${workfolder}"
+    cp -r /usr/share/doc/live-build/examples/auto "${workfolder}"/
+    cp -r "${scriptpath}"/_livebuild/auto "${workfolder}"/
+    cp -r "${scriptpath}"/_livebuild/config "${workfolder}"/
+    sed "s/sid/${codename}/; s/liveuser/${username}/g; s/${codename}-custom/${hostname}/" \
+        -i "${workfolder}"/auto/config
 
     cd "${workfolder}" || exit 1
-    cp -r /usr/share/doc/live-build/examples/auto .
-    cp -r "${scriptpath}"/_livebuild/auto .
-    sed "s/sid/${codename}/; s/liveuser/${username}/" -i auto/config
-
     lb config
 
-    echo -e "${ci}Build image...${c0}"
-    lb clean && lb build
+    echo -e "${ci}Building iso image...${c0}"
+    lb build
 
-    myiso="${scriptpath}/my${codename}-live-amd64.iso"
-    mv "${workfolder}"/live-image-amd64.hybrid.iso "${myiso}"
-    chown "${myuser}":"${mygroup}" "${myiso}"
+    myiso="${scriptpath}/$(date "+%y%m%d")_${codename}_amd64.iso"
+    mv "${workfolder}"/*.iso "${myiso}"
+    mylog="${scriptpath}/$(date "+%y%m%d-%H")_${codename}_build.log"
+    mv "${workfolder}"/build.log "${mylog}"
+    chown "${myuser}":"${mygroup}" {"${myiso}","${mylog}"}
+    chown -R "${myuser}":"${mygroup}" "${scriptpath}"/*
 
-    echo -e "${done}: Image created: '${myiso}'"
+    lb clean --purge
+
+    echo -e "${done} iso image built: '${myiso}'"
+    #rm -rf "${workfolder}"
 }
 
-create_usbkey(){
-    echo -e "${ci}Creating USB key...${c0}"
-    dd if="${myiso}" of="/dev/${device}" bs=512
-    sync
+create_persistent_usbkey(){
+    echo -e "${ci}Putting iso image on target...${c0}"
+    dd if="${myiso}" of=/dev/"${target}"
 
     echo -e "${ci}Adding persistent part...${c0}"
-    wipefs "/dev/${device}"
-    fdisk "/dev/${device}" <<<$'n\np\n\n\n\nw'
+    wipefs "/dev/${target}"
+    fdisk "/dev/${target}" <<<$'n\np\n\n\n\nw'
     sync
-    mkfs.ext4 -FL persistence "/dev/${device}3"
-    mount "/dev/${device}3" /mnt && echo "/ union" >/mnt/persistence.conf
+    mkfs.ext4 -FL persistence "/dev/${target}3"
+    partprobe "/dev/${target}"
+    mount "/dev/${target}3" /mnt && echo "/ union" >/mnt/persistence.conf
+    sync
     umount /mnt
-    sync
 
-    rm -rf "${workfolder}"
-
-    echo -e "${done}: Persistent live-usb based on '${myiso}' ready to use"
+    echo -e "${done} USB key is ready"
 }
-
-codenameok=("buster" "bullseye" "sid")
-
-[[ $(whoami) != root ]] && echo -e "${error} Need higher privileges" && exit 1
-
-case $1 in
-    -h|--help)
-        usage && exit 0
-        ;;
-    -t|--target)
-        target_test "$2"
-        if [[ $3 ]]; then
-            case $3 in
-                -c|--codename)
-                    codename_test "$4"
-                    [[ $5 ]] && [[ ! $5 =~ ^(-u|--user) ]] && bad_arg_exit
-                    [[ $5 ]] && username_test "$6"
-                    ;;
-                -u|--user)
-                    username_test "$4"
-                    [[ $5 ]] && [[ ! $5 =~ ^(-c|--codename) ]] && bad_arg_exit
-                    [[ $5 ]] && codename_test "$6"
-                    ;;
-                *)
-                    bad_arg_exit
-                    ;;
-            esac
-        fi
-        ;;
-    *)
-        bad_arg_exit
-        ;;
-esac
-
-[[ ${codename} ]] || codename="${codenameok[0]}"
-[[ ${username} ]] || username=liveuser
-
-echo -e "${ci}Codename${c0}: ${codename}"
-echo -e "${ci}Username${c0}: ${username}"
-echo -e "${ci}Target${c0}: /dev/${device}"
-read -p "Go [Y/n] ? " -rn1 okgo
-[[ ${okgo} ]] && echo
-[[ ${okgo} =~ [nN] ]] && exit 0
-echo -e "${cw}Grab a tea. It will take some time...${c0}" && sleep 1
 
 scriptpath="$(dirname "$(realpath "$0")")"
 myuser="$(stat -c '%U' "${scriptpath}")"
 mygroup="$(stat -c '%G' "${scriptpath}")"
 
+codenameok=("buster" "bullseye" "sid")
+
+[[ $1 = --help ]] && usage && exit 0
+[[ $(whoami) != root ]] && echo -e "${error} Need higher privileges" && exit 1
+[[ ! $@ ]] && echo -e "${error} '$(basename "$0")' needs arguments" && exit 1
+
+args=("$@")
+
+if [[ ${#args[@]} -gt 1 ]]; then
+    i=0
+    while (( $i < $((${#args[@]}-1)) )); do
+        [[ ${args[$i]} =~ ^(-c|-u|-h)$ ]] || badarg_exit
+        [[ ${args[$i]} = -c ]] && test_codename "${args[$((i+1))]}"
+        [[ ${args[$i]} = -u ]] && test_username "${args[$((i+1))]}"
+        [[ ${args[$i]} = -h ]] && test_hostname "${args[$((i+1))]}"
+        i=$((i+2))
+    done
+
+    [[ ${args[-2]} = -* ]] && badarg_exit
+fi
+
+test_target "${args[-1]}"
+
+confirm_conf
 prerequisites
-build_image
-create_usbkey
+build_iso
+create_persistent_usbkey
