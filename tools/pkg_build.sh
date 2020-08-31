@@ -22,6 +22,21 @@ usage(){
     echo
 }
 
+badarg_exit(){
+    badarg="$1"
+    echo -e "${error} Bad argument '${badarg}'" && usage && exit 1
+}
+
+test_pkgsource(){
+    mypkgsource="$1"
+    [[ ! ${mypkgsource} ]] && echo -e "${error} No source folder given" && usage && exit 1
+    if [[ ! -f "${mypkgsource}"/DEBIAN/control ]]; then
+        echo -e "${error} Invalid debian package source folder '${mypkgsource}'"
+        usage && exit 1
+    fi
+    pkgsource="${mypkgsource}"
+}
+
 build_deb_package(){
     buildfolder="$1"
     myuser=$(stat -c '%U' "${buildfolder}")
@@ -35,20 +50,21 @@ build_deb_package(){
     echo -e "${done} '$(basename "${buildfolder}").deb' generated in '${destfolder}'."
 }
 
-[[ $(whoami) != root ]] && echo -e "${error} Need higher privileges" && usage && exit 1
+args=("$@")
 
 [[ $# -gt 2 ]] && echo -e "${error} Too many arguments" && usage && exit 1
 [[ $# -lt 1 ]] && echo -e "${error} '$(basename "$0")' requires arguments" && usage && exit 1
 
-case $1 in
-    -h|--help)
-        usage ;;
-    -s|--source)
-        [[ ! $2 ]] && echo -e "${error} No source folder given" && usage && exit 1
-        [[ ! -f $2/DEBIAN/control ]] && \
-            echo -e "${error} '$2' is not a debian package source folder" && usage && exit 1
+for i in $(seq $#); do
+    opt="${args[$((i-1))]}"
+    if [[ ${opt} = -* ]]; then
+        [[ ! ${opt} =~ ^-(h|-help|s|-source)$ ]] && badarg_exit "${opt}"
+        arg="${args[$i]}"
+    fi
+    [[ ${opt} =~ ^-(h|-help)$ ]] && usage && exit 0
+    [[ ${opt} =~ ^-(s|-source)$ ]] && test_pkgsource "${arg}"
+done
 
-        build_deb_package "$2" ;;
-    *)
-        echo -e "${error} Bad argument" && err=1 && usage ;;
-esac
+[[ $(whoami) != root ]] && echo -e "${error} Need higher privileges" && usage && exit 1
+
+build_deb_package "${pkgsource}"

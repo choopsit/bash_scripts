@@ -24,6 +24,11 @@ usage(){
     echo
 }
 
+badarg_exit(){
+    badarg="$1"
+    echo -e "${error} Bad argument ${badarg}" && usage && exit 1
+}
+
 detect_fatdevice(){
     mapfile -t fat_device < <(df -hT | awk '/vfat/{print $1}')
     [[ ! ${fat_device[*]} ]] && echo -e "${error} Could not find suitable device"  && \
@@ -75,18 +80,17 @@ choose_version(){
     fi
 }
 
-[[ $(whoami) != root ]] && echo -e "${error} Need higher privileges" && usage && exit 1
+args=("$@")
 
 [[ $# -gt 1 ]] && echo -e "${error} Too many arguments" && usage && exit 1
 
-if [[ $# -eq 1 ]]; then
-    case $1 in
-        -h|--help)
-            usage ;;
-        *)
-            echo -e "${error} Bad argument" && usage && exit 1 ;;
-    esac
-fi
+for i in $(seq $#); do
+    opt="${args[$((i-1))]}"
+    [[ ! ${opt} =~ ^-(h|-help)$ ]] && badarg_exit "${opt}"
+    [[ ${opt} =~ ^-(h|-help)$ ]] && usage && exit 0
+done
+
+[[ $(whoami) != root ]] && echo -e "${error} Need higher privileges" && usage && exit 1
 
 stable_codename=buster
 last_stable=10.4.0

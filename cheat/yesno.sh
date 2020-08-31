@@ -12,5 +12,5 @@ read -p "Y(es) or N(o)? " -rn1 yesno
 case ${yesno} in
     y|Y) echo "Yes" ;;
     n|N) echo "No" ;;
-    *)   echo -e "${error} Invalid choice" && exit 1
+    *)   echo -e "${error} Invalid choice" && exit 1 ;;
 esac

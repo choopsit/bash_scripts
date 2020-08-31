@@ -12,7 +12,7 @@ done="${cf}Done${c0}:"
 
 usage(){
     echo -e "${ci}Usage${c0}:"
-    echo "  './$(basename "$0") [-h|[-u USERNAME [-o OLDPASSWORD [-n NEWPASSWORD]]]]' as root or using 'sudo'"
+    echo "  './$(basename "$0") [-h] [-u USERNAME] [-o OLDPASSWORD [-n NEWPASSWORD]' as root or using 'sudo'"
     echo -e "${ci}Options${c0}:"
     echo "    -h|--help:             Print this help"
     echo "    -u|--user USERNAME:    Set username"
@@ -21,11 +21,16 @@ usage(){
     echo
 }
 
+badarg_exit(){
+    badarg="$1"
+    echo -e "${error} Bad argument '${badarg}'" && usage && exit 1
+}
+
 set_username(){
-    read -p "Username: " -r myuser
-    [[ ! ${myuser} ]] && echo -e "${error} No username given." && exit 1
-    if [[ ! ${myuser} =~ ^[-a-zA-Z0-9]+$ ]]; then
-        echo -e "${error} '${myuser}' is not a valid username" && set_username
+    read -p "Username: " -r username
+    [[ ! ${username} ]] && echo -e "${error} No username given." && exit 1
+    if [[ ! ${username} =~ ^[-a-zA-Z0-9]+$ ]]; then
+        echo -e "${error} '${username}' is not a valid username" && set_username
     fi
 }
 
@@ -42,32 +47,39 @@ set_password(){
     fi
 }
 
-myuser=""
+username="$USER"
+[[ $SUDO_USER ]] && username="$SUDO_USER"
 oldpassword=""
 password=""
 
-if [[ $# -gt 0 ]]; then
-    case $1 in
-        -h|--help)
-            usage && exit 0 ;;
-        -u|--user)
-            myuser="$2"
-            [[ $3 =~ ^(-o|--old)+$ ]] && oldpassword="$4"
-            [[ $5 =~ ^(-n|--new)+$ ]] && password="$6" ;;
-        *)
-            echo -e "${error} Bad argument" && usage && exit 1 ;;
-    esac
+args=("$@")
 
-fi
+[[ $# -eq 1 ]] && [[ $1 != -* ]] && username="$1"
 
-[[ ${myuser} ]] || set_username
-[[ ! ${myuser} =~ ^[-a-zA-Z0-9]+$ ]] && echo -e "${error} '${myuser}' is not a valid username" && exit 1
-if ! (getent passwd | grep -q ^"${myuser}:x"); then
-    echo -e "${error} Unknown username '${myuser}' on '$(hostname)'" && exit 1
+for i in $(seq $#); do
+    opt="${args[$((i-1))]}"
+    if [[ ${opt} = -* ]]; then
+        [[ ! ${opt} =~ ^-(h|-help|u|-user|o|-old|n|-new)$ ]] && badarg_exit "${opt}"
+        arg="${args[$i]}"
+    fi
+    [[ ${opt} =~ ^-(h|-help)$ ]] && usage && exit 0
+    [[ ${opt} =~ ^-(u|-user)$ ]] && arguser=true && username="${arg}"
+    [[ ${opt} =~ ^-(o|-old)$ ]] && oldpassword="${arg}"
+    [[ ${opt} =~ ^-(n|-new)$ ]] && password="${arg}"
+done
+
+[[ ! ${arguser} ]] && read -p "Change password of '${username}' [y/N] ? " -rn1 okuser
+[[ ${okuser} ]] && echo
+[[ ! ${okuser} =~ [yY] ]] && unset username
+
+[[ ${username} ]] || set_username
+[[ ! ${username} =~ ^[-a-zA-Z0-9]+$ ]] && echo -e "${error} '${username}' is not a valid username" && exit 1
+if ! (getent passwd | grep -q ^"${username}:x"); then
+    echo -e "${error} Unknown username '${username}' on '$(hostname)'" && exit 1
 fi
 [[ ${oldpassword} ]] || { read -p "Old password: " -sr oldpassword && echo ; }
 [[ ${password} ]] || set_password
 
-echo -e "${ci}User${c0}:         ${myuser}"
+echo -e "${ci}User${c0}:         ${username}"
 echo -e "${ci}Old password${c0}: ${oldpassword}"
 echo -e "${ci}Password${c0}:     ${password}"

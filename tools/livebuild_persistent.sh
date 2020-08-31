@@ -22,15 +22,14 @@ set -e
 #set -xv
 
 usage(){
-    echo -e "${ci}${description}${c0}"
-    echo -e "${ci}Usage${c0}:"
+    echo -e "${ci}${description}${c0}\n${ci}Usage${c0}:"
     echo "  './$(basename "$0") [OPTIONS] <TARGET>' as root or using 'sudo'"
     echo -e "  ${cw}TARGET${c0}: targeted device (ex: 'sdb')"
     echo -e "${ci}Options${c0}"
-    echo "  --help:        Print this help"
-    echo "  -c <CODENAME>: Define Debian version [default: 'sid']"
-    echo "  -u <USERNAME>: Define live session username [default: 'liveuser']"
-    echo "  -h <HOSTNAME>: Define live support hostname [default: 'sid-custom']"
+    echo "  -h,--help:        Print this help"
+    echo "  -c,--codename <CODENAME>: Define Debian version [default: 'sid']"
+    echo "  -u,--username <USERNAME>: Define live session username [default: 'liveuser']"
+    echo "  -H,--hostname <HOSTNAME>: Define live support hostname [default: 'sid-custom']"
     echo
 }
 
@@ -152,24 +151,27 @@ mygroup="$(stat -c '%G' "${scriptpath}")"
 
 codenameok=("buster" "bullseye" "sid")
 
-[[ $1 = --help ]] && usage && exit 0
-[[ $(whoami) != root ]] && echo -e "${error} Need higher privileges" && exit 1
-[[ ! $@ ]] && echo -e "${error} '$(basename "$0")' needs arguments" && exit 1
-
 args=("$@")
 
-if [[ ${#args[@]} -gt 1 ]]; then
-    i=0
-    while (( $i < $((${#args[@]}-1)) )); do
-        [[ ${args[$i]} =~ ^(-c|-u|-h)$ ]] || badarg_exit
-        [[ ${args[$i]} = -c ]] && test_codename "${args[$((i+1))]}"
-        [[ ${args[$i]} = -u ]] && test_username "${args[$((i+1))]}"
-        [[ ${args[$i]} = -h ]] && test_hostname "${args[$((i+1))]}"
-        i=$((i+2))
-    done
+[[ $# -lt 1 ]] && echo -e "${error} Need at least one argument" && usage && exit 1
 
-    [[ ${args[-2]} = -* ]] && badarg_exit
-fi
+for i in $(seq $#); do
+    opt="${args[$((i-1))]}"
+    if [[ ${opt} = -* ]]; then
+        [[ ! ${opt} =~ ^-(h|-help|c|-codename|u|-username|H|-hostname)$ ]] &&
+            badarg_exit "${opt}"
+
+        arg="${args[$i]}"
+    fi
+    [[ ${opt} =~ ^-(h|-help)$ ]] && usage && exit 0
+    [[ ${opt} =~ ^-(c|-codename)$ ]] && test_codename "${arg}"
+    [[ ${opt} =~ ^-(u|-username)$ ]] && test_username "${arg}"
+    [[ ${opt} =~ ^-(H|-hostname)$ ]] && test_hostname "${arg}"
+done
+
+[[ ${args[-1]} ]] && test_target "${args[-1]}"
+
+[[ $(whoami) != root ]] && echo -e "${error} Need higher privileges" && exit 1
 
 test_target "${args[-1]}"
 

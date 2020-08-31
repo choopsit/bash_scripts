@@ -14,13 +14,17 @@ done="${cf}Done${c0}:"
 set -e
 
 usage(){
-    echo -e "${ci}${description}${c0}"
-    echo -e "${ci}Usage${c0}:\n  ./$(basename "$0") [OPTIONS]"
+    echo -e "${ci}${description}${c0}\n${ci}Usage${c0}:"
+    echo "  ./$(basename "$0") [OPTIONS]"
     echo -e "${ci}Options${c0}:"
-    echo "  -h|--help: Print this help"
+    echo "  -h,--help: Print this help"
     echo
 }
 
+badarg_exit(){
+    badarg="$1"
+    echo -e "${error} Bad argument ${badarg}" && usage && exit 1
+}
 prerequisites(){
     if ! (dpkg -l | grep -q dnsutils); then
         if [[ $(whoami) = root ]]; then
@@ -67,16 +71,15 @@ pick_network_infos(){
     fi
 }
 
+args=("$@")
+
 [[ $# -gt 1 ]] && echo -e "${error} Too many arguments" && usage && exit 1
 
-if [[ $# -eq 1 ]]; then
-    case $1 in
-        -h|--help)
-            usage && exit 0 ;;
-        *)
-            echo -e "${error} Bad argument" && usage && exit 1 ;;
-    esac
-fi
+for i in $(seq $#); do
+    opt="${args[$((i-1))]}"
+    [[ ! ${opt} =~ ^-(h|-help)$ ]] && badarg_exit "${opt}"
+    [[ ${opt} =~ ^-(h|-help)$ ]] && usage && exit 0
+done
 
 prerequisites
 pick_naming_infos

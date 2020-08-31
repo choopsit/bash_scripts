@@ -14,8 +14,8 @@ done="${cf}Done${c0}:"
 set -e
 
 usage(){
-    echo -e "${ci}${description}${c0}"
-    echo -e "${ci}Usage${c0}:\n  './$(basename "$0") [OPTIONS]' as root or using 'sudo'"
+    echo -e "${ci}${description}${c0}\n${ci}Usage${c0}:"
+    echo "  './$(basename "$0") [OPTIONS]' as root or using 'sudo'"
     echo -e "${ci}Options${c0}:"
     echo "  -h|--help:                      Print this help"
     echo "  -d|--domain [<ADMIN>@]<DOMAIN>: Define domain (with admin login. Default admin: 'administrator')"
