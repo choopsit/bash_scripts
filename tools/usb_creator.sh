@@ -16,8 +16,8 @@ warning="${cw}Warning${c0}:"
 set -e
 
 usage(){
-    echo -e "${ci}${description}${c0}"
-    echo -e "${ci}Usage${c0}:\n  './$(basename "$0") [OPTIONS]' as root or using 'sudo'"
+    echo -e "${ci}${description}${c0}\n${ci}Usage${c0}:"
+    echo "  './$(basename "$0") [OPTIONS]' as root or using 'sudo'"
     echo -e "${ci}Options${c0}:"
     echo "  -h|--help: Print this help"
     echo -e "${warning} You must have a FAT32 formated USB key mounted to use this script"
@@ -26,22 +26,22 @@ usage(){
 
 badarg_exit(){
     badarg="$1"
-    echo -e "${error} Bad argument ${badarg}" && usage && exit 1
+    echo -e "${error} Bad argument '${badarg}'" && usage && exit 1
 }
 
 detect_fatdevice(){
     mapfile -t fat_device < <(df -hT | awk '/vfat/{print $1}')
-    [[ ! ${fat_device[*]} ]] && echo -e "${error} Could not find suitable device"  && \
+    [[ ! ${fat_device[*]} ]] && echo -e "${error} Could not find suitable device"  &&
         usage && exit 1
 
     if [[ ${#fat_device[@]} -gt 1 ]]; then
-        echo -e "${info} You have ${#fat_device[@]} devices that could be use :"
+        echo -e "${info} ${#fat_device[@]} devices can be used :"
         for suitable_device in "${fat_device[@]}"; do
             echo "        - '${suitable_device}'"
         done
         for suitable_device in "${fat_device[@]}"; do
             read -p "Do you vant to use ${suitable_device} (mounted on $(mount | awk '/'${suitable_device}'/{print $3}') ? [Y/n] " -rn1 ok_device
-            [[ ! ${ok_device} ]] || echo
+            [[ ${ok_device} ]] && echo
             [[ ! ${ok_device} =~ [nN] ]] && mydevice="${suitable_device}" && break
         done
     else
@@ -68,14 +68,17 @@ choose_version(){
         1) iso_url="${baseurl}"/release/current/amd64/iso-cd/debian-"${last_stable}"-amd64-netinst.iso ;;
         2) iso_url="${baseurl}"/archive/latest-oldstable/amd64/iso-cd/debian-"${last_oldstable}"-amd64-netinst.iso ;;
         3) iso_url="${baseurl}"/weekly-builds/amd64/iso-cd/debian-testing-amd64-netinst.iso ;;
-        *) echo -e "${error} Invalid choice" && choose_version
+        *) echo -e "${error} Invalid choice '${vchoice}'" && choose_version ;;
     esac
+}
 
-    [[ -f /tmp/mydebian.iso ]] && rm -f /tmp/mydebian.iso
-    wget "${iso_url}" -O /tmp/mydebian.iso
+create_usbkey(){
+    myiso=/tmp/mydebian.iso
+    [[ -f "${myiso}" ]] && rm -f "${myiso}"
+    wget "${iso_url}" -O "${myiso}"
 
     umount "${mydevice}"
-    if (dd bs=4M if=/tmp/mydebian.iso of="${mydevice::-1}" conv=fdatasync); then
+    if (dd bs=4M if="${myiso}" of="${mydevice::-1}" conv=fdatasync); then
         echo -e "${done} Debian ${versions[$((vchoice-1))]} bootable USB key ready to use"
     fi
 }
@@ -93,10 +96,11 @@ done
 [[ $(whoami) != root ]] && echo -e "${error} Need higher privileges" && usage && exit 1
 
 stable_codename=buster
-last_stable=10.4.0
+last_stable=10.5.0
 oldstable_codename=stretch
-last_oldstable=9.12.0
+last_oldstable=9.13.0
 testing_codename=bullseye
 
 detect_fatdevice
 choose_version
+create_usbkey

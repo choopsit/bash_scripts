@@ -14,6 +14,8 @@ ci="\e[36m"
 error="${ce}Error${c0}:"
 done="${cf}Done${c0}:"
 
+codenameok=("buster" "bullseye" "sid")
+
 set -e
 
 #exec 5> "${scriptpath}/$(date "+%y%m%d-%H")"_DEBUG.log
@@ -26,7 +28,7 @@ usage(){
     echo "  './$(basename "$0") [OPTIONS] <TARGET>' as root or using 'sudo'"
     echo -e "  ${cw}TARGET${c0}: targeted device (ex: 'sdb')"
     echo -e "${ci}Options${c0}"
-    echo "  -h,--help:        Print this help"
+    echo "  -h,--help:                Print this help"
     echo "  -c,--codename <CODENAME>: Define Debian version [default: 'sid']"
     echo "  -u,--username <USERNAME>: Define live session username [default: 'liveuser']"
     echo "  -H,--hostname <HOSTNAME>: Define live support hostname [default: 'sid-custom']"
@@ -34,15 +36,16 @@ usage(){
 }
 
 badarg_exit(){
-    echo -e "${error} Bad argument" && usage && exit 1
+    badarg="$1"
+    echo -e "${error} Bad argument '${badarg}'" && usage && exit 1
 }
 
 test_target(){
     mytarget="$1"
     [[ ! ${mytarget} ]] && echo -e "${error} No target given" && exit 1
-    [[ ! -e /dev/"${mytarget}" ]] && echo -e "${error} '${mytarget}' is not available" && exit 1
-    [[ ${mytarget} != sd* ]] && echo -e "${error} '${mytarget}' is not a valid drive name" && exit 1
-    grep -qs "^/dev/${mytarget}" /proc/mounts && echo -e "${error} '${mytarget}' is mounted" && exit 1
+    [[ ! -e /dev/"${mytarget}" ]] && echo -e "${error} Target '${mytarget}' not available" && exit 1
+    [[ ${mytarget} != sd* ]] && echo -e "${error} Invalid drive name '${mytarget}'" && exit 1
+    grep -qs "^/dev/${mytarget}" /proc/mounts && echo -e "${error} '${mytarget}' mounted" && exit 1
     target="${mytarget}"
 }
 
@@ -52,7 +55,7 @@ test_codename(){
         [[ ${mycodename} = ${mycodenameok} ]] && codename="${mycodename}" && break
     done
     if [[ ! ${codename} ]]; then
-        echo -e "${error} '${mycodename}' is not a valid codename" && exit 1
+        echo -e "${error} Invalid codename '${mycodename}'" && exit 1
     fi
 }
 
@@ -60,16 +63,16 @@ test_username(){
     myusername="$1"
     [[ ${myusername} =~ ^[a-z]+[a-z0-9-]+[a-z0-9]$ ]] && username="${myusername}"
     if [[ ! ${username} ]]; then
-        echo -e "${error} '${myusername}' is not a valid username" && exit 1
+        echo -e "${error} Invalid username '${myusername}'" && exit 1
     fi
 }
 
 test_hostname(){
-    hn="$1"
-    [[ ${hn} =~ ^[a-z0-9]+[a-z0-9-]+[a-z0-9]$ ]] && hostname="${hn}"
-    [[ ${#hn} -le 2 ]] && [[ ${hn} =~ ^[a-z0-9]+$ ]] && hostname="${hn}"
+    myhostname="$1"
+    [[ ${myhostname} =~ ^[a-z0-9]+[a-z0-9-]+[a-z0-9]$ ]] && hostname="${myhostname}"
+    [[ ${#myhostname} -le 2 ]] && [[ ${myhostname} =~ ^[a-z0-9]+$ ]] && hostname="${myhostname}"
     if [[ ! ${hostname} ]]; then
-        echo -e "${error} '${hn}' is not a valid hostname" && exit 1
+        echo -e "${error} Invalid hostname '${myhostname}'" && exit 1
     fi
 }
 
@@ -109,7 +112,8 @@ build_iso(){
     sed "s/sid/${codename}/; s/liveuser/${username}/g; s/${codename}-custom/${hostname}/" \
         -i "${workfolder}"/auto/config
 
-    cd "${workfolder}" || exit 1
+    #cd "${workfolder}" || exit 1
+    pushd "${workfolder}"
     lb config
 
     echo -e "${ci}Building iso image...${c0}"
@@ -117,39 +121,47 @@ build_iso(){
 
     myiso="${scriptpath}/$(date "+%y%m%d")_${codename}_amd64.iso"
     mv "${workfolder}"/*.iso "${myiso}"
-    mylog="${scriptpath}/$(date "+%y%m%d-%H")_${codename}_build.log"
-    mv "${workfolder}"/build.log "${mylog}"
-    chown "${myuser}":"${mygroup}" {"${myiso}","${mylog}"}
-    chown -R "${myuser}":"${mygroup}" "${scriptpath}"/*
+    chown "${myuser}":"${mygroup}" "${myiso}"
+    chown -R "${myuser}":"${mygroup}" "${scriptpath}"/*.iso
 
     lb clean --purge
+    popd
 
     echo -e "${done} iso image built: '${myiso}'"
-    #rm -rf "${workfolder}"
 }
 
 create_persistent_usbkey(){
+    echo -e "${ci}Cleaning USB key...${c0}"
+    if [[ -e "/dev/${target}3" ]]; then
+        for i in {3..1}; do
+            wipefs "/dev/${target}${i}"
+            fdisk "/dev/${target}" <<<$"d\n\n\nw"
+        done
+        partprobe
+    fi
     echo -e "${ci}Putting iso image on target...${c0}"
     dd if="${myiso}" of=/dev/"${target}"
 
     echo -e "${ci}Adding persistent part...${c0}"
-    wipefs "/dev/${target}"
     fdisk "/dev/${target}" <<<$'n\np\n\n\n\nw'
+    partprobe
     sync
     mkfs.ext4 -FL persistence "/dev/${target}3"
-    partprobe "/dev/${target}"
     mount "/dev/${target}3" /mnt && echo "/ union" >/mnt/persistence.conf
     sync
     umount /mnt
 
+    rm -rf "${workfolder}"
+
     echo -e "${done} USB key is ready"
+    read -p "Keep '$(basename "${myiso}")' [y/N] ? " -rn1 keepiso
+    [[ ${keepiso} ]] && echo
+    [[ ! ${keepiso} =~ [yY] ]] && rm -f "${myiso}"
 }
 
 scriptpath="$(dirname "$(realpath "$0")")"
 myuser="$(stat -c '%U' "${scriptpath}")"
 mygroup="$(stat -c '%G' "${scriptpath}")"
-
-codenameok=("buster" "bullseye" "sid")
 
 args=("$@")
 
@@ -169,11 +181,9 @@ for i in $(seq $#); do
     [[ ${opt} =~ ^-(H|-hostname)$ ]] && test_hostname "${arg}"
 done
 
-[[ ${args[-1]} ]] && test_target "${args[-1]}"
+test_target "${args[-1]}"
 
 [[ $(whoami) != root ]] && echo -e "${error} Need higher privileges" && exit 1
-
-test_target "${args[-1]}"
 
 confirm_conf
 prerequisites

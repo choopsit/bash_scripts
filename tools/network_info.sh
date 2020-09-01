@@ -23,16 +23,16 @@ usage(){
 
 badarg_exit(){
     badarg="$1"
-    echo -e "${error} Bad argument ${badarg}" && usage && exit 1
+    echo -e "${error} Bad argument '${badarg}'" && usage && exit 1
 }
 prerequisites(){
     if ! (dpkg -l | grep -q dnsutils); then
         if [[ $(whoami) = root ]]; then
-            apt-get install -qq dnsutils > /dev/null
+            apt-get install -qq dnsutils >/dev/null
         elif (groups | grep -q sudo); then
-            sudo apt-get install -qq dnsutils > /dev/null
+            sudo apt-get install -qq dnsutils >/dev/null
         else
-            echo -e "${error} 'dnsutils' is not installed. You have to install it before '${USER}' can run this script." && exit 1
+            echo -e "${error} 'dnsutils' not installed. You have to install it before '${USER}' can run this script." && exit 1
         fi
     fi
 }

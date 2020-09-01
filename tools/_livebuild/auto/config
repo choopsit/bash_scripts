@@ -15,7 +15,7 @@ lb config noauto \
     --firmware-chroot "true" \
     --ignore-system-defaults \
     --bootappend-live "boot=live persistence components autologin \
-        username=liveuser hostname=sid-custom \
+        username=liveuser user-fullname=liveuser hostname=sid-custom \
         keyboard-layouts=fr keyboard-model=pc105 timezone=Europe/Paris utc=yes" \
     --debian-installer "live" \
     --debian-installer-gui "true" \
