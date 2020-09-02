@@ -16,7 +16,7 @@ done="${cf}Done${c0}:"
 
 codenameok=("buster" "bullseye" "sid")
 
-set -e
+#set -e
 
 #exec 5> "${scriptpath}/$(date "+%y%m%d-%H")"_DEBUG.log
 #BASH_XTRACEFD="5"
@@ -143,6 +143,7 @@ create_persistent_usbkey(){
     dd if="${myiso}" of=/dev/"${target}"
 
     echo -e "${ci}Adding persistent part...${c0}"
+    wipefs "/dev/${target}"
     fdisk "/dev/${target}" <<<$'n\np\n\n\n\nw'
     partprobe
     sync
