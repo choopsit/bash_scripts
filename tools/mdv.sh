@@ -21,7 +21,8 @@ check_title(){
     for i in $(seq 8); do
         pat+="#"
         if [[ ${line} = "${pat} "* ]]; then
-            line="$(eval echo "\${h${i}}${line/"${pat} "/}")" && break
+            hn="$(eval echo "\${h${i}}")"
+            line="${hn}${line/"${pat} "/}" && break
         fi
     done
 }
@@ -31,40 +32,13 @@ check_list(){
     [[ ${line} =~ ^[\*-]\  ]] && line="${li} ${line/\*/-}"
 }
 
-check_code_in_line(){
-    for color in "${colorlist[@]}"; do
-        [[ ${line} = "${color}"* ]] && lc="${color}"
-    done
-    [[ ${lc} ]] || lc="${df}"
-
-    #while [[ ${line} = *\`*\`* ]]; do
-    #    text1=$(echo ${line} | awk -F"\`" '{print $1}')
-    #    restline="${line#*\`}"
-    #    code=$(echo ${line} | awk -F"\`" '{print $2}')
-    #    text2="${restline#*\`}"
-    #    line="${lc}${text1}${cc} ${code} ${df}${lc}${text2}"
-    #done
-
-    #linelist=(${line})
-    #myline=""
-    #sep=""
-    #for word in "${linelist[@]}"; do
-    #    [[ ${word} = \`*\` ]] && word="${cc} ${word//\`/} ${lc}"
-    #    [[ ${word} = \`* ]] && word="${cc} ${word/\`/}${cc}"
-    #    [[ ${word} = *\` ]] && word="${cc}${word/\`/} ${lc}"
-    #    myline+="${sep}${word}"
-    #    sep=" "
-    #done
-    #line="${myline}"
-}
-
 check_decoration_in_line(){
     bd=""
     it=""
     us=""
 
     for color in "${colorlist[@]}"; do
-        [[ ${line} = "${color}"* ]] && lc1="${color}"
+        [[ ${line} = "${color}"* ]] && lc="${color}"
     done
     [[ ${lc} ]] || lc="${df}"
 
@@ -75,9 +49,39 @@ check_decoration_in_line(){
     myline=""
     sep=""
     for word in "${linelist[@]}"; do
-        unset quote
-        [[ ${word} = \'*\' ]] && quote="'" && word="${word//\'/}"
-        [[ ${word} = \"*\" ]] && quote='"' && word="${word//\"/}"
+        unset iquote
+        unset oquote
+        unset iponct
+        unset oponct
+        unset iqponct
+        unset oqponct
+        iponctlist=("(" "[" "{")
+        oponctlist=("." "," ";" "?" "!" ":" ")" "]" "}")
+
+        for ipct in "${iponctlist[@]}"; do
+            if [[ ${word} = "${ipct}"* ]]; then
+                iponct="${ipct}" && word="${word:1}"
+            fi
+        done
+        for opct in "${oponctlist[@]}"; do
+            if [[ ${word} = *"${opct}" ]]; then
+                oponct="${opct}" && word="${word::-1}"
+            fi
+        done
+        [[ ${word} = \"* ]] && iquote='"' && word="${word:1}"
+        [[ ${word} = *\" ]] && oquote='"' && word="${word::-1}"
+        [[ ${word} = \'* ]] && iquote="'" && word="${word:1}"
+        [[ ${word} = *\' ]] && oquote="'" && word="${word::-1}"
+        for iqpct in "${iponctlist[@]}"; do
+            if [[ ${word} = "${iqpct}"* ]]; then
+                iqponct="${iqpct}" && word="${word:1}"
+            fi
+        done
+        for oqpct in "${oponctlist[@]}"; do
+            if [[ ${word} = *"${oqpct}" ]]; then
+                oqponct="${oqpct}" && word="${word::-1}"
+            fi
+        done
         [[ ${word} = __*__ ]] && word="${bd}${word//__/}${lc}"
         [[ ${word} = __* ]] && word="${bd}${word/__/}${bd}"
         [[ ${word} = *__ ]] && word="${bd}${word/__/}${lc}"
@@ -93,7 +97,7 @@ check_decoration_in_line(){
         [[ ${word} = \`*\` ]] && word="${cc} ${word//\`/} ${lc}"
         [[ ${word} = \`* ]] && word="${cc} ${word/\`/}${cc}"
         [[ ${word} = *\` ]] && word="${cc}${word/\`/} ${lc}"
-        myline+="${sep}${quote}${word}${quote}"
+        myline+="${sep}${iponct}${iquote}${iqponct}${word}${oqponct}${oquote}${oponct}"
         sep=" "
     done
     line="${myline}"
@@ -152,7 +156,6 @@ while read line; do
     check_title
     check_list
     check_decoration_in_line
-    check_code_in_line
-    echo "${df}${line}${df}"
+    #echo "${df}${line}${df}"
     echo -e "${df}${line}${df}"
 done <"${myfile}"
