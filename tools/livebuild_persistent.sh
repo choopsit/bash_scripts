@@ -24,7 +24,7 @@ codenameok=("buster" "bullseye" "sid")
 #set -xv
 
 usage(){
-    echo -e "${ci}${description}${c0}\n${ci}Usage${c0}:"
+    echo -e "${ci}${description}\nUsage${c0}:"
     echo "  './$(basename "$0") [OPTIONS] <TARGET>' as root or using 'sudo'"
     echo -e "  ${cw}TARGET${c0}: targeted device (ex: 'sdb')"
     echo -e "${ci}Options${c0}"
