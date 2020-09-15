@@ -18,20 +18,16 @@ codenameok=("buster" "bullseye" "sid")
 
 #set -e
 
-#exec 5> "${scriptpath}/$(date "+%y%m%d-%H")"_DEBUG.log
-#BASH_XTRACEFD="5"
-#PS4='$LINENO: '
-#set -xv
-
 usage(){
     echo -e "${ci}${description}\nUsage${c0}:"
     echo "  './$(basename "$0") [OPTIONS] <TARGET>' as root or using 'sudo'"
     echo -e "  ${cw}TARGET${c0}: targeted device (ex: 'sdb')"
     echo -e "${ci}Options${c0}"
     echo "  -h,--help:                Print this help"
-    echo "  -c,--codename <CODENAME>: Define Debian version [default: 'sid']"
+    echo "  -c,--codename <CODENAME>: Define Debian version [default: '${codenameok[0]}']"
+    echo -e "    ${cw}Warning${c0}: Only '${codenameok[0]}' can build an installable support."
     echo "  -u,--username <USERNAME>: Define live session username [default: 'liveuser']"
-    echo "  -H,--hostname <HOSTNAME>: Define live support hostname [default: 'sid-custom']"
+    echo "  -H,--hostname <HOSTNAME>: Define live support hostname [default: '${codenameok[0]}-custom']"
     echo
 }
 
@@ -77,9 +73,9 @@ test_hostname(){
 }
 
 confirm_conf(){
-    [[ ${codename} ]] || codename=sid
+    [[ ${codename} ]] || codename="${codenameok[0]}"
     [[ ${username} ]] || username=liveuser
-    [[ ${hostname} ]] || hostname=${codename}-custom
+    [[ ${hostname} ]] || hostname="${codename}-custom"
 
     echo -e "${ci}Codename${c0}: ${codename}"
     echo -e "${ci}Username${c0}: ${username}"
@@ -112,7 +108,6 @@ build_iso(){
     sed "s/sid/${codename}/; s/liveuser/${username}/g; s/${codename}-custom/${hostname}/" \
         -i "${workfolder}"/auto/config
 
-    #cd "${workfolder}" || exit 1
     pushd "${workfolder}"
     lb config
 
