@@ -24,9 +24,8 @@ usage(){
     echo
 }
 
-badarg_exit(){
-    badarg="$1"
-    echo -e "${error} Bad argument '${badarg}'" && usage && exit 1
+badopt(){
+    echo -e "${error} Unknown option '$1'" && usage && exit 1
 }
 
 detect_fatdevice(){
@@ -87,11 +86,8 @@ args=("$@")
 
 [[ $# -gt 1 ]] && echo -e "${error} Too many arguments" && usage && exit 1
 
-for i in $(seq $#); do
-    opt="${args[$((i-1))]}"
-    [[ ! ${opt} =~ ^-(h|-help)$ ]] && badarg_exit "${opt}"
-    [[ ${opt} =~ ^-(h|-help)$ ]] && usage && exit 0
-done
+[[ $1 ]] && [[ ! $1 =~ ^-(h|-help)$ ]] && badopt "$1"
+[[ $1 ]] && [[ $1 =~ ^-(h|-help)$ ]] && usage && exit 0
 
 [[ $(whoami) != root ]] && echo -e "${error} Need higher privileges" && usage && exit 1
 

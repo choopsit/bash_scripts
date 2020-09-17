@@ -103,15 +103,13 @@ check_decoration_in_line(){
     line="${myline}"
 }
 
-[[ $# -lt 1 ]] && echo -e "${error} Need an argument" && usage && exit 1
-
-args=("$@")
-
-for i in $(seq $#); do
-    [[ ${args[$((i-1))]} =~ ^(-h|--help) ]] && usage && exit 0
-done
-
+[[ $# -lt 1 ]] && echo -e "${error} Need an 1 argument" && usage && exit 1
 [[ $# -gt 1 ]] && echo -e "${error} Too many arguments" && usage && exit 1
+
+arg=("$@")
+for i in $(seq 0 $((${#arg[@]}-1))); do
+    [[ ${arg[$i]} =~ ^-(h|-help)$ ]] && usage && exit 0
+done
 
 myfile="$1"
 

@@ -22,16 +22,15 @@ usage(){
     echo
 }
 
-badarg_exit(){
-    badarg= "$1"
-    echo -e "${error} Invalid argument '${badarg}'" && usage && exit 1
+badopt(){
+    echo -e "${error} Unknown option '$1'" && usage && exit 1
 }
 
 test_domain(){
     mydomain="$1"
-    if [[ ${mydomain} = *@* ]]; then
-        adm=${mydomain%@*}
-        dom=${mydomain##*@}
+    if [[ $1 = *@* ]]; then
+        adm=${1%@*}
+        dom=${1##*@}
         if [[ ${adm} =~ ^[a-z][-a-z0-9]*\$ ]]; then
             adminlogin="${adm}"
         else
@@ -42,10 +41,10 @@ test_domain(){
         else
             echo -e "${error} Invalid domain name '${dom}'" && exit 1
         fi
-    elif [[ ${mydomain} =~ ^[a-z][-a-z0-9.]*[a-z]$ ]] && [[ ${mydomain} =~ [.] ]]; then
-        domain="${mydomain}"
+    elif [[ $1 =~ ^[a-z][-a-z0-9.]*[a-z]$ ]] && [[ $1 =~ [.] ]]; then
+        domain="$1"
     else
-        echo -e "${error} Invalid domain name '${mydomain}'" && exit 1
+        echo -e "${error} Invalid domain name '$1'" && exit 1
     fi
 }
 
@@ -103,21 +102,21 @@ scriptpath="$(dirname "$(realpath "$0")")"
 resourcespath="$(dirname "${scriptpath}")"/resources
 confpath="${resourcespath}"/templates
 
-[[ $# -gt 2 ]] && echo -e "${error} Too many arguments" && usage && exit 1
-[[ $# -lt 1 ]] && echo -e "${error} Need at least one argument" && usage && exit 1
-
-args=("@")
-
 adminlogin=administrator
 
-for i in $(seq $#); do
-    opt="${args[$((i-1))]}"
-    if [[ ${opt} = -* ]]; then
-        [[ ! ${opt} =~ ^-(h|-help|d|-domain)$ ]] && badarg_exit "${opt}"
-        arg="${args[$i]}"
-    fi
-    [[ ${opt} =~ ^-(h|-help)$ ]] && usage && exit 0
-    [[ ${opt} =~ ^-(d|-domain)$ ]] && test_domain "${arg}"
+[[ $# -lt 1 ]] && echo -e "${error} Need at least 1 argument" && usage && exit 1
+
+maxarg=2
+[[ $# -gt ${maxarg} ]] && echo -e "${error} Too many arguments" && usage && exit 1
+
+arg=("$@")
+for i in $(seq 0 $((${#arg[@]}-1))); do
+    [[ ${arg[$i]} =~ ^-(h|-help)$ ]] && usage && exit 0
+done
+re_opts="^-(h|-help|d|-domain)"
+for i in $(seq 0 $((${#arg[@]}-1))); do
+    [[ ${arg[$i]} = -* ]] && [[ ! ${arg[$i]} =~ ${re_opts} ]] && badopt "${arg[$i]}"
+    [[ ${arg[$i]} =~ ^-(d|-domain)$ ]] && test_domain "${arg[$((i+1))]}"
 done
 
 [[ $(whoami) != root ]] && echo "${error} Need higher privileges." && usage && exit 1

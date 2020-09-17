@@ -21,20 +21,19 @@ usage(){
     echo
 }
 
-badarg_exit(){
-    badarg="$1"
-    echo -e "${error} Bad argument '${badarg}'" && usage && exit 1
+badopt(){
+    echo -e "${error} Unknown option '$1'" && usage && exit 1
 }
+
 prerequisites(){
-    if ! (dpkg -l | grep -q dnsutils); then
-        if [[ $(whoami) = root ]]; then
-            apt-get install -qq dnsutils >/dev/null
-        elif (groups | grep -q sudo); then
-            sudo apt-get install -qq dnsutils >/dev/null
-        else
-            echo -e "${error} 'dnsutils' not installed. You have to install it before '${USER}' can run this script." && exit 1
-        fi
+    if [[ $(whoami) = root ]]; then
+        higher=""
+    elif (groups | grep -q sudo); then
+        higher="sudo"
+    else
+        echo -e "${error} 'dnsutils' not installed. You have to install it before '${USER}' can run this script." && exit 1
     fi
+    (dpkg -l | grep -q dnsutils) || "${higher}" apt-get install -qq dnsutils >/dev/null
 }
 
 pick_naming_infos(){
@@ -50,24 +49,22 @@ list_interfaces(){
 }
 
 pick_network_infos(){
-    iface="$1"
-
-    mtu=$(ip a sh "${iface}" | awk '/mtu/{print $5}')
-    ipaddr=$(ip a sh "${iface}" | awk '/inet /{print $2}' | cut -d'/' -f1)
-    macaddr=$(ip a sh "${iface}" | awk '/link\/ether/{print $2}')
+    mtu=$(ip a sh "$1" | awk '/mtu/{print $5}')
+    ipaddr=$(ip a sh "$1" | awk '/inet /{print $2}' | cut -d'/' -f1)
+    macaddr=$(ip a sh "$1" | awk '/link\/ether/{print $2}')
     gatewayip=$(ip route | awk '/default via/{print $3}')
     dnsip=$(dig | awk -F"(" '/SERVER:/{print $2}' | sed 's/.$//')
 
     if [[ ${ipaddr} ]]; then
-        network_results+="\n${ci}Interface${c0}: ${iface}"
+        network_results+="\n${ci}Interface${c0}: $1"
         network_results+="\n  - ${ci}MTU${c0}:            ${mtu}"
         network_results+="\n  - ${ci}MAC address${c0}:    ${macaddr}"
         network_results+="\n  - ${ci}IP address${c0}:     ${ipaddr}"
         network_results+="\n  - ${ci}Gateway${c0}:        ${gatewayip}"
         network_results+="\n  - ${ci}DNS nameserver${c0}: ${dnsip}"
-    elif [[ $(ip a sh "${iface}") = *master* ]] && [[ ${iface} != vnet* ]]; then
-        bridge=$(ip a | awk '/'${iface}'/{print $9}')
-        network_results+="\n${ci}Interface${c0}: ${iface} [master of bridge '${bridge}']"
+    elif [[ $(ip a sh "$1") = *master* ]] && [[ $1 != vnet* ]]; then
+        bridge=$(ip a | awk '/'$1'/{print $9}')
+        network_results+="\n${ci}Interface${c0}: $1 [master of bridge '${bridge}']"
     fi
 }
 
@@ -75,11 +72,8 @@ args=("$@")
 
 [[ $# -gt 1 ]] && echo -e "${error} Too many arguments" && usage && exit 1
 
-for i in $(seq $#); do
-    opt="${args[$((i-1))]}"
-    [[ ! ${opt} =~ ^-(h|-help)$ ]] && badarg_exit "${opt}"
-    [[ ${opt} =~ ^-(h|-help)$ ]] && usage && exit 0
-done
+[[ $1 ]] && [[ $1 =~ ^-(h|-help)$ ]] && usage && exit 0 
+[[ $1 ]] && [[ ! $1 =~ ^-(h|-help)$ ]] && badopt "$1" 
 
 prerequisites
 pick_naming_infos

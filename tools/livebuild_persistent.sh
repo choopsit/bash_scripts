@@ -159,22 +159,18 @@ scriptpath="$(dirname "$(realpath "$0")")"
 myuser="$(stat -c '%U' "${scriptpath}")"
 mygroup="$(stat -c '%G' "${scriptpath}")"
 
-args=("$@")
+[[ $# -lt 1 ]] && echo -e "${error} Need at least 1 argument" && usage && exit 1
 
-[[ $# -lt 1 ]] && echo -e "${error} Need at least one argument" && usage && exit 1
-
-for i in $(seq $#); do
-    opt="${args[$((i-1))]}"
-    if [[ ${opt} = -* ]]; then
-        [[ ! ${opt} =~ ^-(h|-help|c|-codename|u|-username|H|-hostname)$ ]] &&
-            badarg_exit "${opt}"
-
-        arg="${args[$i]}"
-    fi
-    [[ ${opt} =~ ^-(h|-help)$ ]] && usage && exit 0
-    [[ ${opt} =~ ^-(c|-codename)$ ]] && test_codename "${arg}"
-    [[ ${opt} =~ ^-(u|-username)$ ]] && test_username "${arg}"
-    [[ ${opt} =~ ^-(H|-hostname)$ ]] && test_hostname "${arg}"
+arg=("$@")
+for i in $(seq 0 $((${#arg[@]}-1))); do
+    [[ ${arg[$i]} =~ ^-(h|-help)$ ]] && usage && exit 0
+done
+re_opts="^-(h|-help|c|-codename|u|-username|H|-hostname)$"
+for i in $(seq 0 $((${#arg[@]}-1))); do
+    [[ ${arg[$i]} = -* ]] && [[ ! ${arg[$i]} =~ ${re_opts} ]] && badopt "${arg[$i]}"
+    [[ ${arg[$i]} =~ ^-(c|-codename)$ ]] && test_codename "${arg[$((i+1))]}"
+    [[ ${arg[$i]} =~ ^-(u|-username)$ ]] && test_username "${arg[$((i+1))]}"
+    [[ ${arg[$i]} =~ ^-(H|-hostname)$ ]] && test_hostname "${arg[$((i+1))]}"
 done
 
 test_target "${args[-1]}"

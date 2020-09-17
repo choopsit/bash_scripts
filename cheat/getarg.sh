@@ -20,63 +20,54 @@ usage(){
     echo
 }
 
-badarg_exit(){
-    badarg="$1"
-    echo -e "${error} Bad argument '${badarg}'" && usage && exit 1
+badopt(){
+    echo -e "${error} Unknown option '$1'" && usage && exit 1
 }
 
 test_target(){
-    mytarget="$1"
-    if [[ ! -e /dev/"${mytarget}" ]]; then
-        echo -e "${error} Invalid target '${mytarget}'" && exit 1
+    if [[ ! -e /dev/"$1" ]]; then
+        echo -e "${error} Invalid target '$1'" && exit 1
     fi
     target="${mytarget}"
 }
 
 test_codename(){
-    mycodename="$1"
     oklist=("buster" "sid")
     for cnok in ${oklist[@]}; do
-        [[ ${mycodename} = ${cnok} ]] && codename="${mycodename}" && break
+        [[ ${cnok} = "$1" ]] && codename="$1"
     done
     if [[ ! ${codename} ]]; then
-        echo -e "${error} Invalid codename '${mycodename}'" && exit 1
+        echo -e "${error} Invalid codename '$1'" && exit 1
     fi
 }
 
 test_username(){
-    myusername="$1"
-    [[ ${#myusername} -lt 2 ]] &&
-        echo -e "${error} '$myusername' is too short (at least 2 characters)"
-
-    [[ ${#myusername} -eq 2 ]] && [[ ${myusername} =~ ^[a-z][a-z0-9]$ ]] &&
-        username="${myusername}"
-
-    [[ ${#myusername} -gt 2 ]] && [[ ${myusername} =~ ^[a-z][a-z0-9-]+[a-z0-9]$ ]] &&
-        username="${myusername}"
-
+    [[ ${#1} -eq 2 ]] && [[ $1 =~ ^[a-z][a-z0-9]$ ]] && username="$1"
+    [[ ${#1} -gt 2 ]] && [[ $1 =~ ^[a-z][a-z0-9-]+[a-z0-9]$ ]] && username="$1"
     if [[ ! ${username} ]]; then
         echo -e "${error} Invalid username '${myusername}'" && exit 1
     fi  
 }
 
-args=("$@")
+[[ $# -lt 1 ]] && echo -e "${error} Need at least 1 argument" && usage && exit 1
 
-[[ $# -lt 1 ]] && echo -e "${error} Need at least one argument" && usage && exit 1
-
-for i in $(seq $#); do
-    opt="${args[$((i-1))]}"
-    if [[ ${opt} = -* ]]; then
-        [[ ! ${opt} =~ ^-(h|-help|c|-codename|u|-username|K)$ ]] && badarg_exit "${opt}"
-        arg="${args[$i]}"
-    fi
-    [[ ${opt} =~ ^-(h|-help)$ ]] && usage && exit 0
-    [[ ${opt} =~ ^-(c|-codename)$ ]] && test_codename "${arg}"
-    [[ ${opt} =~ ^-(u|-username)$ ]] && test_username "${arg}"
-    [[ ${opt} = -K ]] && krust=true
+arg=("$@")
+for i in $(seq 0 $((${#arg[@]}-1))); do                                          
+    [[ ${arg[$i]} =~ ^-(h|-help)$ ]] && usage && exit 0                          
 done
 
-[[ ${args[-1]} ]] && test_target "${args[-1]}"
+re_opts="^-(h|-help|c|-codename|u|-username|K)$"
+for i in $(seq 0 $((${#arg[@]}-1))); do
+    if [[ ${arg[$i]} = -* ]]; then
+        [[ ! ${arg[$i]} =~ ${re_opts} ]] && badopt "${arg[$i]}"
+        arg="${args[$i]}"
+    fi
+    [[ ${arg[$i]} =~ ^-(c|-codename)$ ]] && test_codename "${arg[$((i+1))]}"
+    [[ ${arg[$i]} =~ ^-(u|-username)$ ]] && test_username "${arg[$((i+1))]}"
+    [[ ${arg[$i]} = -K ]] && krust=true
+done
+
+[[ ${arg[-1]} ]] && test_target "${arg[-1]}"
 
 [[ ${krust} ]] && echo -e "${cw}Krusty!!!${c0}"
 [[ ${codename} ]] && echo -e "${ci}Codename${c0}: ${codename}"

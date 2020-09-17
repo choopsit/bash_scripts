@@ -14,16 +14,15 @@ usage(){
     echo -e "${ci}Usage${c0}:"
     echo "  './$(basename "$0") [-h] [-u USERNAME] [-o OLDPASSWORD [-n NEWPASSWORD]' as root or using 'sudo'"
     echo -e "${ci}Options${c0}:"
-    echo "    -h|--help:             Print this help"
-    echo "    -u|--user USERNAME:    Set username"
-    echo "    -o|--old OLD_PASSWORD: Give old password"
-    echo "    -n|--new NEW_PASSWORD: Set new password"
+    echo "    -h,--help:             Print this help"
+    echo "    -u,--user USERNAME:    Set username"
+    echo "    -o,--old OLD_PASSWORD: Give old password"
+    echo "    -n,--new NEW_PASSWORD: Set new password"
     echo
 }
 
-badarg_exit(){
-    badarg="$1"
-    echo -e "${error} Bad argument '${badarg}'" && usage && exit 1
+badopt(){
+    echo -e "${error} Unknown option '$1'" && usage && exit 1
 }
 
 set_username(){
@@ -52,20 +51,20 @@ username="$USER"
 oldpassword=""
 password=""
 
-args=("$@")
+arg=("$@")
+for i in $(seq 0 $((${#arg[@]}-1))); do                                          
+    [[ ${arg[$i]} =~ ^-(h|-help)$ ]] && usage && exit 0                          
+done
 
-[[ $# -eq 1 ]] && [[ $1 != -* ]] && username="$1"
-
-for i in $(seq $#); do
-    opt="${args[$((i-1))]}"
-    if [[ ${opt} = -* ]]; then
-        [[ ! ${opt} =~ ^-(h|-help|u|-user|o|-old|n|-new)$ ]] && badarg_exit "${opt}"
+re_opts="^-(h|-help|u|-user|o|-old|n|-new)$"
+for i in $(seq 0 $((${#arg[@]}-1))); do
+    if [[ ${arg[$i]} = -* ]]; then
+        [[ ! ${arg[$i]} =~ ${re_opts} ]] && badopt "${arg[$i]}"
         arg="${args[$i]}"
     fi
-    [[ ${opt} =~ ^-(h|-help)$ ]] && usage && exit 0
-    [[ ${opt} =~ ^-(u|-user)$ ]] && arguser=true && username="${arg}"
-    [[ ${opt} =~ ^-(o|-old)$ ]] && oldpassword="${arg}"
-    [[ ${opt} =~ ^-(n|-new)$ ]] && password="${arg}"
+    [[ ${arg[$i]} =~ ^-(u|-user)$ ]] && arguser=true && username="${arg[$((i+1))]}"
+    [[ ${arg[$i]} =~ ^-(o|-old)$ ]] && oldpassword="${arg[$((i+1))]}"
+    [[ ${arg[$i]} =~ ^-(n|-new)$ ]] && password="${arg[$((i+1))]}"
 done
 
 [[ ! ${arguser} ]] && read -p "Change password of '${username}' [y/N] ? " -rn1 okuser

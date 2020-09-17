@@ -22,47 +22,44 @@ usage(){
     echo
 }
 
-badarg_exit(){
-    badarg="$1"
-    echo -e "${error} Bad argument '${badarg}'" && usage && exit 1
+badopt(){
+    echo -e "${error} Unknown option '$1'" && usage && exit 1
 }
 
 test_pkgsource(){
-    mypkgsource="$1"
-    [[ ! ${mypkgsource} ]] && echo -e "${error} No source folder given" && usage && exit 1
-    if [[ ! -f "${mypkgsource}"/DEBIAN/control ]]; then
-        echo -e "${error} Invalid debian package source folder '${mypkgsource}'"
+    [[ ! $1 ]] && echo -e "${error} No source folder given" && usage && exit 1
+    if [[ ! -f "$1"/DEBIAN/control ]]; then
+        echo -e "${error} Invalid debian package source folder '$1'"
         usage && exit 1
     fi
-    pkgsource="${mypkgsource}"
+    pkgsource="$1"
 }
 
 build_deb_package(){
-    buildfolder="$1"
-    myuser=$(stat -c '%U' "${buildfolder}")
-    mygroup=$(stat -c '%G' "${buildfolder}")
+    myuser=$(stat -c '%U' "$1")
+    mygroup=$(stat -c '%G' "$1")
 
-    chown -R root:root "${buildfolder}"
-    dpkg-deb --build "${buildfolder}"
-    chown -R "${myuser}:${mygroup}" "${buildfolder}"*
+    chown -R root:root "$1"
+    dpkg-deb --build "$1"
+    chown -R "${myuser}:${mygroup}" "$1"*
 
-    destfolder="$(dirname "$(realpath "${buildfolder}")")"
-    echo -e "${done} '$(basename "${buildfolder}").deb' generated in '${destfolder}'."
+    destfolder="$(dirname "$(realpath "$1")")"
+    echo -e "${done} '$(basename "$1").deb' generated in '${destfolder}'."
 }
 
-args=("$@")
+[[ $# -lt 1 ]] && echo -e "${error} Need at least 1 argument" && usage && exit 1
 
-[[ $# -gt 2 ]] && echo -e "${error} Too many arguments" && usage && exit 1
-[[ $# -lt 1 ]] && echo -e "${error} '$(basename "$0")' requires arguments" && usage && exit 1
+maxarg=2
+[[ $# -gt ${maxarg} ]] && echo -e "${error} Too many arguments" && usage && exit 1
 
-for i in $(seq $#); do
-    opt="${args[$((i-1))]}"
-    if [[ ${opt} = -* ]]; then
-        [[ ! ${opt} =~ ^-(h|-help|s|-source)$ ]] && badarg_exit "${opt}"
-        arg="${args[$i]}"
-    fi
-    [[ ${opt} =~ ^-(h|-help)$ ]] && usage && exit 0
-    [[ ${opt} =~ ^-(s|-source)$ ]] && test_pkgsource "${arg}"
+arg=("$@")
+for i in $(seq 0 $((${#arg[@]}-1))); do
+    [[ ${arg[$i]} =~ ^-(h|-help)$ ]] && usage && exit 0
+done
+re_opts="^-(h|-help|s|-source)"
+for i in $(seq 0 $((${#arg[@]}-1))); do
+    [[ ${arg[$i]} = -* ]] && [[ ! ${arg[$i]} =~ ${re_opts} ]] && badopt "${arg[$i]}"
+    [[ ${arg[$i]} =~ ^-(s|-source)$ ]] && test_pkgsource "${arg[$((i+1))]}"
 done
 
 [[ $(whoami) != root ]] && echo -e "${error} Need higher privileges" && usage && exit 1
