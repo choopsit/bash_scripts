@@ -19,7 +19,7 @@ usage(){
     echo -e "${ci}${description}\nUsage${c0}:"
     echo "  './$(basename "$0") [OPTIONS]' as root or using 'sudo'"
     echo -e "${ci}Options${c0}:"
-    echo "  -h|--help: Print this help"
+    echo "  -h,--help: Print this help"
     echo -e "${warning} You must have a FAT32 formated USB key mounted to use this script"
     echo
 }
@@ -73,11 +73,11 @@ choose_version(){
 
 create_usbkey(){
     myiso=/tmp/mydebian.iso
-    [[ -f "${myiso}" ]] && rm -f "${myiso}"
+    rm -f "${myiso}"
     wget "${iso_url}" -O "${myiso}"
 
     umount "${mydevice}"
-    if (dd bs=4M if="${myiso}" of="${mydevice::-1}" conv=fdatasync); then
+    if dd bs=4M if="${myiso}" of="${mydevice::-1}" conv=fdatasync; then
         echo -e "${done} Debian ${versions[$((vchoice-1))]} bootable USB key ready to use"
     fi
 }

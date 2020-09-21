@@ -17,8 +17,8 @@ usage(){
     echo -e "${ci}${description}\nUsage${c0}:"
     echo "  './$(basename "$0") [OPTIONS]' as root or using 'sudo'"
     echo -e "${ci}Options${c0}:"
-    echo "    -h|--help:                 Print this help"
-    echo "    -s|--source <BUILDFOLDER>: Define source folder to build"
+    echo "    -h,--help:                 Print this help"
+    echo "    -s,--source <BUILDFOLDER>: Define source folder to build"
     echo
 }
 

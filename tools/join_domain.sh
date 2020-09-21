@@ -17,8 +17,8 @@ usage(){
     echo -e "${ci}${description}\nUsage${c0}:"
     echo "  './$(basename "$0") <OPTIONS>' as root or using 'sudo'"
     echo -e "${ci}Options${c0}:"
-    echo "  -h|--help:                      Print this help"
-    echo "  -d|--domain [<ADMIN>@]<DOMAIN>: Define domain (with admin login. Default admin: 'administrator')"
+    echo "  -h,--help:                      Print this help"
+    echo "  -d,--domain [<ADMIN>@]<DOMAIN>: Define domain (with admin login. Default admin: 'administrator')"
     echo
 }
 
@@ -51,20 +51,20 @@ test_domain(){
 fix_dns(){
     nodns_conf="/etc/NetworkManager/conf.d/no-dns.conf"
 
-    if (dpkg -l | grep -q network-manager) && { [[ ! -f ${nodns_conf} ]] || ! (grep -qs "dns=none" "${nodns_conf}"); }; then
+    if dpkg -l | grep -q network-manager && { [[ ! -f ${nodns_conf} ]] || ! (grep -qs "dns=none" "${nodns_conf}"); }; then
         echo -e "[main]\ndns=none" >"${nodns_conf}"
     fi
 
     [[ -L /etc/resolv.conf ]] && mv /etc/resolv.conf /etc/resolv.conf.o
 
-    (grep -qs "${domain}" /etc/resolv.conf) ||
+    grep -qs "${domain}" /etc/resolv.conf ||
         echo -e "domain ${domain}\nsearch ${domain}\nnameserver ${dns_ip}" >/etc/resolv.conf
 
     dpkg -l | grep -q network-manager && systemctl restart NetworkManager
 }
 
 configure_ntp(){
-    (grep -qs "${ad_server}" /etc/systemd/timesyncd.conf) || \
+    grep -qs "${ad_server}" /etc/systemd/timesyncd.conf || \
         sed "s/#NTP=/NTP=${ad_server}/" -i /etc/systemd/timesyncd.conf
 
     timedatectl set-ntp true

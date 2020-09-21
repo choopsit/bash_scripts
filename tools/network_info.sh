@@ -28,12 +28,12 @@ badopt(){
 prerequisites(){
     if [[ $(whoami) = root ]]; then
         higher=""
-    elif (groups | grep -q sudo); then
+    elif groups | grep -q sudo; then
         higher="sudo"
     else
         echo -e "${error} 'dnsutils' not installed. You have to install it before '${USER}' can run this script." && exit 1
     fi
-    (dpkg -l | grep -q dnsutils) || "${higher}" apt-get install -qq dnsutils >/dev/null
+    "${higher}" apt-get install -qq dnsutils >/dev/null
 }
 
 pick_naming_infos(){
@@ -75,7 +75,7 @@ args=("$@")
 [[ $1 ]] && [[ $1 =~ ^-(h|-help)$ ]] && usage && exit 0 
 [[ $1 ]] && [[ ! $1 =~ ^-(h|-help)$ ]] && badopt "$1" 
 
-prerequisites
+dpkg -l | grep -q dnsutils || prerequisites
 pick_naming_infos
 list_interfaces
 for iface_n in "${iface[@]}"; do

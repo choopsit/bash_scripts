@@ -45,7 +45,7 @@ test_username(){
     [[ ${#1} -eq 2 ]] && [[ $1 =~ ^[a-z][a-z0-9]$ ]] && username="$1"
     [[ ${#1} -gt 2 ]] && [[ $1 =~ ^[a-z][a-z0-9-]+[a-z0-9]$ ]] && username="$1"
     if [[ ! ${username} ]]; then
-        echo -e "${error} Invalid username '${myusername}'" && exit 1
+        echo -e "${error} Invalid username '$1'" && exit 1
     fi  
 }
 

@@ -154,6 +154,5 @@ while read line; do
     check_title
     check_list
     check_decoration_in_line
-    #echo "${df}${line}${df}"
     echo -e "${df}${line}${df}"
 done <"${myfile}"
