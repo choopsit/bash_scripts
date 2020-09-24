@@ -58,13 +58,13 @@ monitor_and_log(){
     echo -e "${ci}Logging I/O stats on '/dev/${device}'...${c0}\nPress any key to stop logging"
 
     echo -e "\n# Log for I/O on '${device}' with ${delay}s delay" >>"${logfile}"
-    echo -e "DATE\tRead (kb/s)\tWrite (kb/s)" >>"${logfile}"
+    echo -e "DATE\t\t\tRead (kb/s)\tWrite (kb/s)" >>"${logfile}"
 
     while true; do
         timestamp="$(date +"[%d/%m/%y-%T]")"
         read_kbs="$(iostat /dev/"${device}" | awk '/^'"${device}"'/ {print $3}')"
         write_kbs="$(iostat /dev/"${device}" | awk '/^'"${device}"'/ {print $4}')"
-        echo -e "${timestamp}\t${read_kbs}\t${write_kbs}" >>"${logfile}"
+        echo -e "${timestamp}\t${read_kbs}\t\t${write_kbs}" >>"${logfile}"
         if read -rN1 -t "${delay}" stoplog; then
             echo
             break
