@@ -72,8 +72,14 @@ args=("$@")
 
 [[ $# -gt 1 ]] && echo -e "${error} Too many arguments" && usage && exit 1
 
-[[ $1 ]] && [[ $1 =~ ^-(h|-help)$ ]] && usage && exit 0 
-[[ $1 ]] && [[ ! $1 =~ ^-(h|-help)$ ]] && badopt "$1" 
+arg=("$@")
+for i in $(seq 0 $((${#arg[@]}-1))); do
+    [[ ${arg[$i]} =~ ^-(h|-help)$ ]] && usage && exit 0
+done
+re_opts="^-(h|-help)$"
+for i in $(seq 0 $((${#arg[@]}-1))); do
+    [[ ${arg[$i]} = -* ]] && [[ ! ${arg[$i]} =~ ${re_opts} ]] && badopt "${arg[$i]}"
+done
 
 dpkg -l | grep -q dnsutils || prerequisites
 pick_naming_infos

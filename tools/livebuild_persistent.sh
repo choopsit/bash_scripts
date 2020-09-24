@@ -31,9 +31,8 @@ usage(){
     echo
 }
 
-badarg_exit(){
-    badarg="$1"
-    echo -e "${error} Bad argument '${badarg}'" && usage && exit 1
+badopt(){
+    echo -e "${error} Unknown option '$1'" && usage && exit 1
 }
 
 test_target(){

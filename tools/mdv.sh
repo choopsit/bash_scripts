@@ -16,6 +16,10 @@ usage(){
     echo " -h,--help: Print this help"
 }
 
+badopt(){
+    echo -e "${error} Unknown option '$1'" && usage && exit 1
+}
+
 check_title(){
     pat=""
     for i in $(seq 8); do
@@ -109,6 +113,10 @@ check_decoration_in_line(){
 arg=("$@")
 for i in $(seq 0 $((${#arg[@]}-1))); do
     [[ ${arg[$i]} =~ ^-(h|-help)$ ]] && usage && exit 0
+done
+re_opts="^-(h|-help)$"
+for i in $(seq 0 $((${#arg[@]}-1))); do
+    [[ ${arg[$i]} = -* ]] && [[ ! ${arg[$i]} =~ ${re_opts} ]] && badopt "${arg[$i]}"
 done
 
 myfile="$1"

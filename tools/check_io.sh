@@ -20,9 +20,9 @@ usage(){
     echo
 }
 
-badopt(){                                                                        
-    echo -e "${error} Unknown option '$1'" && usage && exit 1                                 
-}  
+badopt(){
+    echo -e "${error} Unknown option '$1'" && usage && exit 1
+}
 
 test_delay(){
     [[ ! $1 =~ ^[0-9]+$ ]] && echo -e "${error} Delay must be an integer" && exit 1
@@ -55,7 +55,7 @@ reset_logfile(){
 }
 
 monitor_and_log(){
-    echo -e "${ci}Logging I/O stats on 'prod' volume...${c0}\nPress any key to stop logging"
+    echo -e "${ci}Logging I/O stats on '/dev/${device}'...${c0}\nPress any key to stop logging"
 
     echo -e "\n# Log for I/O on '${device}' with ${delay}s delay" >>"${logfile}"
     echo -e "DATE\tRead (kb/s)\tWrite (kb/s)" >>"${logfile}"
