@@ -64,7 +64,7 @@ monitor_and_log(){
         timestamp="$(date +"[%d/%m/%y-%T]")"
         read_kbs="$(iostat /dev/"${device}" | awk '/^'"${device}"'/ {print $3}')"
         write_kbs="$(iostat /dev/"${device}" | awk '/^'"${device}"'/ {print $4}')"
-        echo -e "${timestamp}\t${read_kbs}\tWrite: ${write_kbs}" >>"${logfile}"
+        echo -e "${timestamp}\t${read_kbs}\t${write_kbs}" >>"${logfile}"
         if read -rN1 -t "${delay}" stoplog; then
             echo
             break
