@@ -37,8 +37,7 @@ test_output(){
 [[ $# -lt 1 ]] && echo "No argument given" && exit 0
 
 while [[ $# -gt 0 ]]; do
-    key="$1"
-    case ${key} in
+    case $1 in
         -i|--input)
             test_input "$2"
             shift
@@ -54,7 +53,7 @@ while [[ $# -gt 0 ]]; do
             usage && exit 0
             ;;
         *)
-            echo -e "${error} Unknown option ${key}" && exit 1
+            echo -e "${error} Unknown option '$1'" && exit 1
             ;;
     esac
     shift
