@@ -36,6 +36,7 @@ test_output(){
 
 [[ $# -lt 1 ]] && echo "No argument given" && exit 0
 
+positionals=()
 while [[ $# -gt 0 ]]; do
     case $1 in
         -i|--input)
@@ -52,8 +53,11 @@ while [[ $# -gt 0 ]]; do
         -h|--help)
             usage && exit 0
             ;;
-        *)
+        -*)
             echo -e "${error} Unknown option '$1'" && exit 1
+            ;;
+        *)
+            positionals+=("$1")
             ;;
     esac
     shift
@@ -62,3 +66,4 @@ done
 [[ ${simu} ]] && echo -e "${ce}/${c0}!${ce}\\ ${cw}Simulation${c0}"
 [[ ${input} ]] && echo -e "${ci}Input${c0}:  ${input}"
 [[ ${output} ]] && echo -e "${ci}Output${c0}: ${output}"
+[[ ${#positionals} -gt 0 ]] && echo -e "${ci}Positional arguments${c0}: ${positionals[@]}"
