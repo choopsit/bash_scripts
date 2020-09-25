@@ -36,26 +36,26 @@ test_output(){
 
 [[ $# -lt 1 ]] && echo "No argument given" && exit 0
 
-while [[ $# -gt 1 ]]; do
-    key="${1}"
+while [[ $# -gt 0 ]]; do
+    key="$1"
     case ${key} in
-    -i|--input)
-        test_input "${2}"
-        shift
-        ;;
-    -o|--output)
-        test_output "${2}"
-        shift
-        ;;
-    -s|--simu)
-        simu=true
-        ;;
-    -h|--help)
-        usage && exit 0
-        ;;
-    *)
-        echo -e "${error} Unknown option ${key}"
-        ;;
+        -i|--input)
+            test_input "$2"
+            shift
+            ;;
+        -o|--output)
+            test_output "$2"
+            shift
+            ;;
+        -s|--simu)
+            simu=true
+            ;;
+        -h|--help)
+            usage && exit 0
+            ;;
+        *)
+            echo -e "${error} Unknown option ${key}" && exit 1
+            ;;
     esac
     shift
 done
