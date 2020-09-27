@@ -40,25 +40,17 @@ positionals=()
 while [[ $# -gt 0 ]]; do
     case $1 in
         -i|--input)
-            test_input "$2"
-            shift
-            ;;
+            test_input "$2" && shift ;;
         -o|--output)
-            test_output "$2"
-            shift
-            ;;
+            test_output "$2" && shift ;;
         -s|--simu)
-            simu=true
-            ;;
+            simu=true ;;
         -h|--help)
-            usage && exit 0
-            ;;
+            usage && exit 0 ;;
         -*)
-            echo -e "${error} Unknown option '$1'" && exit 1
-            ;;
+            echo -e "${error} Unknown option '$1'" && exit 1 ;;
         *)
-            positionals+=("$1")
-            ;;
+            positionals+=("$1") ;;
     esac
     shift
 done

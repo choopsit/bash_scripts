@@ -16,8 +16,41 @@ usage(){
     echo " -h,--help: Print this help"
 }
 
-badopt(){
-    echo -e "${error} Unknown option '$1'" && usage && exit 1
+define_colors(){
+    df="\e[0;37m"
+
+    h1="\e[1;32m"
+    h2="\e[4;32m"
+    h3="\e[0;32m"
+    h4="\e[3;32m"
+    h5="\e[1;2;32m"
+    h6="\e[4;2;32m"
+    h7="\e[0;2;32m"
+    h8="\e[3;2;32m"
+
+    li="\e[0;36m"
+
+    cc="\e[0;33;40m"
+
+    colorlist=("${df}" "${bd}" "${it}" "${us}" "${h1}" "${h2}" "${h3}" "${h4}" "${h5}" "${h6}" \
+        "${h7}" "${h8}" "${li}" "${cc}")
+
+    #echo -e "${h1}Title${df}"
+    #echo -e "${h2}Subtitle${df}"
+    #echo -e "${h3}Subsubtitle${df}"
+    #echo -e "${h4}Subsubsubtitle${df}"
+    #echo -e "${h5}Subsubsubsubtitle${df}"
+    #echo -e "${h6}Subsubsubsubsubtitle${df}"
+    #echo -e "${h7}Subsubsubsubsubsubtitle${df}"
+    #echo -e "${h8}Subsubsubsubsubsubsubtitle${df}"
+
+    #echo -e "${df}Normal text${df}"
+    #echo -e "${bd}Bold text${df}"
+    #echo -e "${it}Italic text${df}"
+    #echo -e "${us}Underscored text${df}"
+
+    #echo -e "${li} 1. ordered list element${df}"
+    #echo -e "${li} - unordered list element${df}"
 }
 
 check_title(){
@@ -107,54 +140,25 @@ check_decoration_in_line(){
     line="${myline}"
 }
 
-[[ $# -lt 1 ]] && echo -e "${error} Need an 1 argument" && usage && exit 1
-[[ $# -gt 1 ]] && echo -e "${error} Too many arguments" && usage && exit 1
-
-arg=("$@")
-for i in $(seq 0 $((${#arg[@]}-1))); do
-    [[ ${arg[$i]} =~ ^-(h|-help)$ ]] && usage && exit 0
+positionals=()
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -h|--help)
+            usage && exit 0 ;;
+        -*)
+            echo -e "${error} Unknown option '$1'" && usage && exit 1 ;;
+        *)
+            positionals+=("$1") ;;
+    esac
+    shift
 done
-re_opts="^-(h|-help)$"
-for i in $(seq 0 $((${#arg[@]}-1))); do
-    [[ ${arg[$i]} = -* ]] && [[ ! ${arg[$i]} =~ ${re_opts} ]] && badopt "${arg[$i]}"
-done
 
-myfile="$1"
+[[ ${#positionals[@]} -ne 1 ]] &&
+    echo -e "${error} Need a unique positional argument" && usage && exit 1
 
-df="\e[0;37m"
+myfile="${positionals[0]}"
 
-h1="\e[1;32m"
-h2="\e[4;32m"
-h3="\e[0;32m"
-h4="\e[3;32m"
-h5="\e[1;2;32m"
-h6="\e[4;2;32m"
-h7="\e[0;2;32m"
-h8="\e[3;2;32m"
-
-li="\e[0;36m"
-
-cc="\e[0;33;40m"
-
-colorlist=("${df}" "${bd}" "${it}" "${us}" "${h1}" "${h2}" "${h3}" "${h4}" "${h5}" "${h6}" \
-    "${h7}" "${h8}" "${li}" "${cc}")
-
-#echo -e "${h1}Title${df}"
-#echo -e "${h2}Subtitle${df}"
-#echo -e "${h3}Subsubtitle${df}"
-#echo -e "${h4}Subsubsubtitle${df}"
-#echo -e "${h5}Subsubsubsubtitle${df}"
-#echo -e "${h6}Subsubsubsubsubtitle${df}"
-#echo -e "${h7}Subsubsubsubsubsubtitle${df}"
-#echo -e "${h8}Subsubsubsubsubsubsubtitle${df}"
-#
-#echo -e "${df}Normal text${df}"
-#echo -e "${bd}Bold text${df}"
-#echo -e "${it}Italic text${df}"
-#echo -e "${us}Underscored text${df}"
-#
-#echo -e "${li} 1. ordered list element${df}"
-#echo -e "${li} - unordered list element${df}"
+define_colors
 
 clear
 

@@ -5,10 +5,10 @@ author="Choops <choopsbd@gmail.com>"
 c0="\e[0m"
 ci="\e[36m"
 
-echo "${ci}Current user${c0}: $USER"
+echo -e "${ci}Current user${c0}: $USER"
 
 if [[ $SUDO_USER ]] ;then
-    echo "Using 'sudo'"
+    echo -e "${ci}Using 'sudo'${c0}"
     myuser="$SUDO_USER"
 else
     if [[ $(whoami) = root ]]; then
@@ -18,4 +18,4 @@ else
     fi
 fi
 
-echo "${ci}Real user${c0}:    ${myuser}"
+echo -e "${ci}Real user${c0}:    ${myuser}"

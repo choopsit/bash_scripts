@@ -82,18 +82,23 @@ create_usbkey(){
     fi
 }
 
-args=("$@")
-
 [[ $# -gt 1 ]] && echo -e "${error} Too many arguments" && usage && exit 1
 
-arg=("$@")
-for i in $(seq 0 $((${#arg[@]}-1))); do
-    [[ ${arg[$i]} =~ ^-(h|-help)$ ]] && usage && exit 0
+positionals=()
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -h|--help)
+            usage && exit 0 ;;
+        -*)
+            echo -e "${error} Unknown option '$1'" && exit 1 ;;
+        *)
+            positionals+=("$1") ;;
+    esac
+    shift
 done
-re_opts="^-(h|-help)"
-for i in $(seq 0 $((${#arg[@]}-1))); do
-    [[ ${arg[$i]} = -* ]] && [[ ! ${arg[$i]} =~ ${re_opts} ]] && badopt "${arg[$i]}"
-done
+
+[[ ${#positionals[@]} -gt 0 ]] &&
+    echo -e "${error} Bad argument(s) '${positionals[@]}'" && exit 1
 
 [[ $(whoami) != root ]] && echo -e "${error} Need higher privileges" && usage && exit 1
 

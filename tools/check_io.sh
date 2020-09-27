@@ -11,6 +11,8 @@ ci="\e[36m"
 error="${ce}Error${c0}:"
 warning="${cw}Warning${c0}:"
 
+set -e
+
 usage(){
     echo -e "${ci}${description}\nUsage${c0}:"
     echo "  $(basename "$0") [OPTION] [DEVICE]"
@@ -20,16 +22,26 @@ usage(){
     echo
 }
 
-badopt(){
-    echo -e "${error} Unknown option '$1'" && usage && exit 1
-}
-
 test_delay(){
     [[ ! $1 =~ ^[0-9]+$ ]] && echo -e "${error} Delay must be an integer" && exit 1
     delay="$1"
 }
 
+prerequisites(){
+    pkgs=("sysstat")
+    groups | grep -q sudo && higher="sudo"
+    if [[ $(whoami) = root ]] || [[ ${higher} ]]; then
+        for pkg in "${pkgs[@]}"; do
+            dpkg -l | grep -q "${pkg}" || echo -e "${ci}Installing '${pkg}'...${c0}"
+            "${higher}" apt install -yy "${pkg}" &>/dev/null
+        done
+    else
+        echo -e "${error} '${pkgs[@]}' not installed. You have to install it before '${USER}' can run this script." && exit 1
+    fi
+}
+
 test_device(){
+    prerequisites
     [[ ! -e /dev/"$1" ]] && echo -e "${error} Unknown device '$1'" && exit 1
     ! (iostat /dev/"$1" | grep -q "$1") && echo -e "${error} '$1' is not monitorable" && exit 1
     device="$1"
@@ -50,7 +62,9 @@ reset_logfile(){
         echo -e "${warning} A precedent logfile exists"
         read -p "Delete old logfile [Y/n] ? " -rn1 resetlog
         [[ ${resetlog} ]] && echo
-        [[ ! ${resetlog} =~ [nN] ]] && rm -f "${logfile}"
+        if [[ ! ${resetlog} =~ [nN] ]]; then
+            rm -f "${logfile}"
+        fi
     fi
 }
 
@@ -72,7 +86,7 @@ monitor_and_log(){
     done
 }
 
-show_log(){
+show_logfile(){
     read -p "Visualize log [Y/n] ? " -rn1 seelog
     [[ ${seelog} ]] && echo
     [[ ${seelog} = [nN] ]] && exit 0
@@ -81,22 +95,28 @@ show_log(){
 
 logfile=/tmp/io_report.log
 
-arg=("$@")
-for i in $(seq 0 $((${#arg[@]}-1))); do
-    [[ ${arg[$i]} =~ ^-(h|-help)$ ]] && usage && exit 0
-done
-re_opts="^-(h|-help|d|-delay)$"
-for i in $(seq 0 $((${#arg[@]}-1))); do
-    [[ ${arg[$i]} = -* ]] && [[ ! ${arg[$i]} =~ ${re_opts} ]] && badopt "${arg[$i]}"
-    [[ ${arg[$i]} =~ ^-(d|-delay)$ ]] && test_delay "${arg[$((i+1))]}"
+positionals=()
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -d|--delay)
+            test_delay "$2" && shift ;;
+        -h|--help)
+            usage && exit 0 ;;
+        -*)
+            echo -e "${error} Unknown option '$1'" && usage && exit 1 ;;
+        *)
+            positionals+=("$1") ;;
+    esac
+    shift
 done
 
-if [[ $# -gt 0 ]]; then
-    test_device "${@: -1}"
-fi
+[[ ${#positionals[@]} -gt 1 ]] &&
+    echo -e "${error} To many postinal arguments" && usage && exit 1
+
+[[ ${#positionals[@]} -eq 1 ]] && test_device "${positionals[0]}"
 
 [[ ! ${device} ]] && choose_device
 [[ ! ${delay} ]] && delay=10
 reset_logfile
 monitor_and_log
-show_log
+show_logfile

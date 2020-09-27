@@ -21,10 +21,6 @@ usage(){
     echo
 }
 
-badopt(){
-    echo -e "${error} Unknown option '$1'" && usage && exit 1
-}
-
 set_username(){
     read -p "Username: " -r username
     [[ ! ${username} ]] && echo -e "${error} No username given." && exit 1
@@ -51,20 +47,23 @@ username="$USER"
 oldpassword=""
 password=""
 
-arg=("$@")
-for i in $(seq 0 $((${#arg[@]}-1))); do                                          
-    [[ ${arg[$i]} =~ ^-(h|-help)$ ]] && usage && exit 0                          
-done
-
-re_opts="^-(h|-help|u|-user|o|-old|n|-new)$"
-for i in $(seq 0 $((${#arg[@]}-1))); do
-    if [[ ${arg[$i]} = -* ]]; then
-        [[ ! ${arg[$i]} =~ ${re_opts} ]] && badopt "${arg[$i]}"
-        arg="${args[$i]}"
-    fi
-    [[ ${arg[$i]} =~ ^-(u|-user)$ ]] && arguser=true && username="${arg[$((i+1))]}"
-    [[ ${arg[$i]} =~ ^-(o|-old)$ ]] && oldpassword="${arg[$((i+1))]}"
-    [[ ${arg[$i]} =~ ^-(n|-new)$ ]] && password="${arg[$((i+1))]}"
+positionals=()
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -u|--user)
+            arguser=true && username="$2" && shift ;;
+        -o|--old)
+            oldpassword="$2" && shift ;;
+        -n|--new)
+            password="$2" && shift ;;
+        -h|--help)
+            usage && exit 0 ;;
+        -*)
+            echo -e "${error} Unknown option '$1'" && exit 1 ;;
+        *)
+            positionals+=("$1") ;;
+    esac
+    shift
 done
 
 [[ ! ${arguser} ]] && read -p "Change password of '${username}' [y/N] ? " -rn1 okuser

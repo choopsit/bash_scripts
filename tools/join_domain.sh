@@ -22,10 +22,6 @@ usage(){
     echo
 }
 
-badopt(){
-    echo -e "${error} Unknown option '$1'" && usage && exit 1
-}
-
 test_domain(){
     mydomain="$1"
     if [[ $1 = *@* ]]; then
@@ -46,6 +42,12 @@ test_domain(){
     else
         echo -e "${error} Invalid domain name '$1'" && exit 1
     fi
+}
+
+prerequisites(){
+    apt update &>/dev/null
+    apt install -yy \
+        dnsutils sssd sssd-tools libnss-sss libpam-sss krb5-user adcli samba-common-bin
 }
 
 fix_dns(){
@@ -106,23 +108,27 @@ adminlogin=administrator
 
 [[ $# -lt 1 ]] && echo -e "${error} Need at least 1 argument" && usage && exit 1
 
-maxarg=2
-[[ $# -gt ${maxarg} ]] && echo -e "${error} Too many arguments" && usage && exit 1
+positionals=()
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -d|--domain)
+            test_domain "$2" && shift ;;
+        -h|--help)
+            usage && exit 0 ;;
+        -*)
+            echo -e "${error} Unknown option '$1'" && usage && exit 1 ;;
+        *)
+            positionals+=("$1") ;;
+    esac
+    shift
+done
 
-arg=("$@")
-for i in $(seq 0 $((${#arg[@]}-1))); do
-    [[ ${arg[$i]} =~ ^-(h|-help)$ ]] && usage && exit 0
-done
-re_opts="^-(h|-help|d|-domain)"
-for i in $(seq 0 $((${#arg[@]}-1))); do
-    [[ ${arg[$i]} = -* ]] && [[ ! ${arg[$i]} =~ ${re_opts} ]] && badopt "${arg[$i]}"
-    [[ ${arg[$i]} =~ ^-(d|-domain)$ ]] && test_domain "${arg[$((i+1))]}"
-done
+[[ ${#positionals[@]} -gt 0 ]] &&
+    echo -e "${error} Bad argument(s) '${positionals[@]}'" && usage && exit 1
 
 [[ $(whoami) != root ]] && echo "${error} Need higher privileges." && usage && exit 1
 
-apt-get install -y \
-    dnsutils sssd sssd-tools libnss-sss libpam-sss krb5-user adcli samba-common-bin
+prerequisites
 
 realm="${domain^^}"
 dns_ip=$(dig | awk -F"(" '/SERVER:/{print $2}' | sed 's/.$//')

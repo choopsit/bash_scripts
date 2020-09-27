@@ -31,10 +31,6 @@ usage(){
     echo
 }
 
-badopt(){
-    echo -e "${error} Unknown option '$1'" && usage && exit 1
-}
-
 test_target(){
     mytarget="$1"
     [[ ! ${mytarget} ]] && echo -e "${error} No target given" && exit 1
@@ -160,21 +156,31 @@ mygroup="$(stat -c '%G' "${scriptpath}")"
 
 [[ $# -lt 1 ]] && echo -e "${error} Need at least 1 argument" && usage && exit 1
 
-arg=("$@")
-for i in $(seq 0 $((${#arg[@]}-1))); do
-    [[ ${arg[$i]} =~ ^-(h|-help)$ ]] && usage && exit 0
-done
-re_opts="^-(h|-help|c|-codename|u|-username|H|-hostname)$"
-for i in $(seq 0 $((${#arg[@]}-1))); do
-    [[ ${arg[$i]} = -* ]] && [[ ! ${arg[$i]} =~ ${re_opts} ]] && badopt "${arg[$i]}"
-    [[ ${arg[$i]} =~ ^-(c|-codename)$ ]] && test_codename "${arg[$((i+1))]}"
-    [[ ${arg[$i]} =~ ^-(u|-username)$ ]] && test_username "${arg[$((i+1))]}"
-    [[ ${arg[$i]} =~ ^-(H|-hostname)$ ]] && test_hostname "${arg[$((i+1))]}"
+positionals=()
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -c|--codename)
+            test_codename "$2" && shift ;;
+        -u|--username)
+            test_username "$2" && shift ;;
+        -H|--hostname)
+            test_hostname "$2" && shift ;;
+        -h|--help)
+            usage && exit 0 ;;
+        -*)
+            echo -e "${error} Unknown option '$1'" && usage && exit 1 ;;
+        *)
+            positionals+=("$1") ;;
+    esac
+    shift
 done
 
-test_target "${args[-1]}"
+[[ ${#positionals[@]} -ne 1 ]] &&
+    echo -e "${error} Need a unique positional argument" && usage && exit 1
 
-[[ $(whoami) != root ]] && echo -e "${error} Need higher privileges" && exit 1
+test_target "${positionals[0]}"
+
+[[ $(whoami) != root ]] && echo "${error} Need higher privileges." && usage && exit 1
 
 confirm_conf
 prerequisites

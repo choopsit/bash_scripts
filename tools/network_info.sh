@@ -21,19 +21,17 @@ usage(){
     echo
 }
 
-badopt(){
-    echo -e "${error} Unknown option '$1'" && usage && exit 1
-}
-
 prerequisites(){
-    if [[ $(whoami) = root ]]; then
-        higher=""
-    elif groups | grep -q sudo; then
-        higher="sudo"
+    pkgs=("dnsutils")
+    groups | grep -q sudo && higher="sudo"
+    if [[ $(whoami) = root ]] || [[ ${higher} ]]; then
+        for pkg in "${pkgs[@]}"; do
+            dpkg -l | grep -q "${pkg}" || echo -e "${ci}Installing '${pkg}'...${c0}"
+            "${higher}" apt install -yy "${pkg}" &>/dev/null
+        done
     else
-        echo -e "${error} 'dnsutils' not installed. You have to install it before '${USER}' can run this script." && exit 1
+        echo -e "${error} '${pkgs[@]}' not installed. You have to install it before '${USER}' can run this script." && exit 1
     fi
-    "${higher}" apt-get install -qq dnsutils >/dev/null
 }
 
 pick_naming_infos(){
@@ -68,25 +66,32 @@ pick_network_infos(){
     fi
 }
 
-args=("$@")
+print_infos(){
+line="\n${ci}======================================${c0}"
+echo -e "${ci}Hostname${c0}: ${myhostname}${show_fqdn}${line}${network_results}"
+}
 
-[[ $# -gt 1 ]] && echo -e "${error} Too many arguments" && usage && exit 1
-
-arg=("$@")
-for i in $(seq 0 $((${#arg[@]}-1))); do
-    [[ ${arg[$i]} =~ ^-(h|-help)$ ]] && usage && exit 0
+positionals=()
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -h|--help)
+            usage && exit 0 ;;
+        -*)
+            echo -e "${error} Unknown option '$1'" && usage && exit 1 ;;
+        *)
+            positionals+=("$1") ;;
+    esac
+    shift
 done
-re_opts="^-(h|-help)$"
-for i in $(seq 0 $((${#arg[@]}-1))); do
-    [[ ${arg[$i]} = -* ]] && [[ ! ${arg[$i]} =~ ${re_opts} ]] && badopt "${arg[$i]}"
-done
 
-dpkg -l | grep -q dnsutils || prerequisites
+[[ ${#positionals[@]} -gt 0 ]] &&
+    echo -e "${error} Bad argument(s) '${positionals[@]}'" && usage && exit 1
+
+prerequisites
+
 pick_naming_infos
 list_interfaces
 for iface_n in "${iface[@]}"; do
     pick_network_infos "${iface_n}"
 done
-
-line="\n${ci}======================================${c0}"
-echo -e "${ci}Hostname${c0}: ${myhostname}${show_fqdn}${line}${network_results}"
+print_infos
