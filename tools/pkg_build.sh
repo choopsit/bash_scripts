@@ -43,7 +43,7 @@ build_deb_package(){
     echo -e "${done} '$(basename "$1").deb' generated in '${destfolder}'."
 }
 
-[[ $# -lt 1 ]] && echo -e "${error} Need at least 1 argument" && usage && exit 1
+[[ $# -lt 1 ]] && echo -e "${error} Argument required" && usage && exit 0
 
 positionals=()
 while [[ $# -gt 0 ]]; do

@@ -111,7 +111,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 [[ ${#positionals[@]} -gt 1 ]] &&
-    echo -e "${error} To many postinal arguments" && usage && exit 1
+    echo -e "${error} To many positional arguments" && usage && exit 1
 
 [[ ${#positionals[@]} -eq 1 ]] && test_device "${positionals[0]}"
 

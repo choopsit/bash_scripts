@@ -34,7 +34,7 @@ test_output(){
     output="$1"
 }
 
-[[ $# -lt 1 ]] && echo "No argument given" && exit 0
+[[ $# -lt 1 ]] && echo -e "${error} Argument required" && usage && exit 0
 
 positionals=()
 while [[ $# -gt 0 ]]; do
@@ -48,7 +48,7 @@ while [[ $# -gt 0 ]]; do
         -h|--help)
             usage && exit 0 ;;
         -*)
-            echo -e "${error} Unknown option '$1'" && exit 1 ;;
+            echo -e "${error} Unknown option '$1'" && usage && exit 1 ;;
         *)
             positionals+=("$1") ;;
     esac

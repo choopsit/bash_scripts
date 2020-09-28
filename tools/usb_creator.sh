@@ -82,8 +82,6 @@ create_usbkey(){
     fi
 }
 
-[[ $# -gt 1 ]] && echo -e "${error} Too many arguments" && usage && exit 1
-
 positionals=()
 while [[ $# -gt 0 ]]; do
     case $1 in
