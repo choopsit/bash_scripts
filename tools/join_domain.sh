@@ -23,7 +23,6 @@ usage(){
 }
 
 test_domain(){
-    mydomain="$1"
     if [[ $1 = *@* ]]; then
         adm=${1%@*}
         dom=${1##*@}
@@ -124,7 +123,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 [[ ${#positionals[@]} -gt 0 ]] &&
-    echo -e "${error} Bad argument(s) '${positionals[@]}'" && usage && exit 1
+    echo -e "${error} Bad argument(s) '${positionals[*]}'" && usage && exit 1
 
 [[ $(whoami) != root ]] && echo "${error} Need higher privileges." && usage && exit 1
 

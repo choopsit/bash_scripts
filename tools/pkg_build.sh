@@ -61,7 +61,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 [[ ${#positionals[@]} -gt 0 ]] &&
-    echo -e "${error} Bad argument(s) '${positionals[@]}'" && usage && exit 1
+    echo -e "${error} Bad argument(s) '${positionals[*]}'" && usage && exit 1
 
 [[ $(whoami) != root ]] && echo -e "${error} Need higher privileges" && usage && exit 1
 

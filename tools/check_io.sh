@@ -36,7 +36,7 @@ prerequisites(){
             "${higher}" apt install -yy "${pkg}" &>/dev/null
         done
     else
-        echo -e "${error} '${pkgs[@]}' not installed. You have to install it before '${USER}' can run this script." && exit 1
+        echo -e "${error} '${pkgs[*]}' not installed. You have to install it before '${USER}' can run this script." && exit 1
     fi
 }
 
@@ -79,7 +79,7 @@ monitor_and_log(){
         read_kbs="$(iostat /dev/"${device}" | awk '/^'"${device}"'/ {print $3}')"
         write_kbs="$(iostat /dev/"${device}" | awk '/^'"${device}"'/ {print $4}')"
         echo -e "${timestamp}\t${read_kbs}\t\t${write_kbs}" >>"${logfile}"
-        if read -rN1 -t "${delay}" stoplog; then
+        if read -rN1 -t "${delay}"; then
             echo
             break
         fi

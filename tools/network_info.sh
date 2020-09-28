@@ -9,7 +9,6 @@ cf="\e[32m"
 ci="\e[36m"
 
 error="${ce}Error${c0}:"
-done="${cf}Done${c0}:"
 
 set -e
 
@@ -30,7 +29,7 @@ prerequisites(){
             "${higher}" apt install -yy "${pkg}" &>/dev/null
         done
     else
-        echo -e "${error} '${pkgs[@]}' not installed. You have to install it before '${USER}' can run this script." && exit 1
+        echo -e "${error} '${pkgs[*]}' not installed. You have to install it before '${USER}' can run this script." && exit 1
     fi
 }
 
@@ -61,14 +60,14 @@ pick_network_infos(){
         network_results+="\n  - ${ci}Gateway${c0}:        ${gatewayip}"
         network_results+="\n  - ${ci}DNS nameserver${c0}: ${dnsip}"
     elif [[ $(ip a sh "$1") = *master* ]] && [[ $1 != vnet* ]]; then
-        bridge=$(ip a | awk '/'$1'/{print $9}')
+        bridge=$(ip a | awk '/'"$1"'/{print $9}')
         network_results+="\n${ci}Interface${c0}: $1 [master of bridge '${bridge}']"
     fi
 }
 
 print_infos(){
-line="\n${ci}======================================${c0}"
-echo -e "${ci}Hostname${c0}: ${myhostname}${show_fqdn}${line}${network_results}"
+    line="\n${ci}======================================${c0}"
+    echo -e "${ci}Hostname${c0}: ${myhostname}${show_fqdn}${line}${network_results}"
 }
 
 positionals=()
@@ -85,7 +84,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 [[ ${#positionals[@]} -gt 0 ]] &&
-    echo -e "${error} Bad argument(s) '${positionals[@]}'" && usage && exit 1
+    echo -e "${error} Bad argument(s) '${positionals[*]}'" && usage && exit 1
 
 prerequisites
 

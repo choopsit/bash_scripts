@@ -24,22 +24,18 @@ usage(){
     echo
 }
 
-badopt(){
-    echo -e "${error} Unknown option '$1'" && usage && exit 1
-}
-
 detect_fatdevice(){
     mapfile -t fat_device < <(df -hT | awk '/vfat/{print $1}')
     [[ ! ${fat_device[*]} ]] && echo -e "${error} Could not find suitable device"  &&
         usage && exit 1
 
     if [[ ${#fat_device[@]} -gt 1 ]]; then
-        echo -e "${info} ${#fat_device[@]} devices can be used :"
+        echo -e "${ci}${#fat_device[@]} devices can be used${c0}:"
         for suitable_device in "${fat_device[@]}"; do
-            echo "        - '${suitable_device}'"
+            echo -e "        - '${ci}${suitable_device}${c0}'"
         done
         for suitable_device in "${fat_device[@]}"; do
-            read -p "Do you vant to use ${suitable_device} (mounted on $(mount | awk '/'${suitable_device}'/{print $3}') ? [Y/n] " -rn1 ok_device
+            read -p "Do you want to use ${suitable_device} (mounted on $(mount | awk '/'"${suitable_device}"'/{print $3}') ? [Y/n] " -rn1 ok_device
             [[ ${ok_device} ]] && echo
             [[ ! ${ok_device} =~ [nN] ]] && mydevice="${suitable_device}" && break
         done
@@ -64,9 +60,9 @@ choose_version(){
     read -p "Your choice: " -rn1 vchoice
     [[ ! ${vchoice} ]] || echo
     case ${vchoice} in
-        1) iso_url="${baseurl}"/release/current/amd64/iso-cd/debian-"${last_stable}"-amd64-netinst.iso ;;
-        2) iso_url="${baseurl}"/archive/latest-oldstable/amd64/iso-cd/debian-"${last_oldstable}"-amd64-netinst.iso ;;
-        3) iso_url="${baseurl}"/weekly-builds/amd64/iso-cd/debian-testing-amd64-netinst.iso ;;
+        1) iso_url="${baseurl}/release/current/amd64/iso-cd/debian-${last_stable}-amd64-netinst.iso" ;;
+        2) iso_url="${baseurl}/archive/latest-oldstable/amd64/iso-cd/debian-${last_oldstable}-amd64-netinst.iso" ;;
+        3) iso_url="${baseurl}/weekly-builds/amd64/iso-cd/debian-testing-amd64-netinst.iso" ;;
         *) echo -e "${error} Invalid choice '${vchoice}'" && choose_version ;;
     esac
 }
@@ -96,7 +92,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 [[ ${#positionals[@]} -gt 0 ]] &&
-    echo -e "${error} Bad argument(s) '${positionals[@]}'" && exit 1
+    echo -e "${error} Bad argument(s) '${positionals[*]}'" && exit 1
 
 [[ $(whoami) != root ]] && echo -e "${error} Need higher privileges" && usage && exit 1
 

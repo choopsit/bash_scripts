@@ -32,38 +32,34 @@ usage(){
 }
 
 test_target(){
-    mytarget="$1"
-    [[ ! ${mytarget} ]] && echo -e "${error} No target given" && exit 1
-    [[ ! -e /dev/"${mytarget}" ]] && echo -e "${error} Target '${mytarget}' not available" && exit 1
-    [[ ${mytarget} != sd* ]] && echo -e "${error} Invalid drive name '${mytarget}'" && exit 1
-    grep -qs "^/dev/${mytarget}" /proc/mounts && echo -e "${error} '${mytarget}' mounted" && exit 1
-    target="${mytarget}"
+    [[ ! $1 ]] && echo -e "${error} No target given" && exit 1
+    [[ ! -e /dev/"$1" ]] && echo -e "${error} Target '$1' not available" && exit 1
+    [[ $1 != sd* ]] && echo -e "${error} Invalid drive name '$1'" && exit 1
+    grep -qs "^/dev/$1" /proc/mounts && echo -e "${error} '$1' mounted" && exit 1
+    target="$1"
 }
 
 test_codename(){
-    mycodename="$1"
-    for mycodenameok in "${codenameok[@]}"; do
-        [[ ${mycodename} = ${mycodenameok} ]] && codename="${mycodename}" && break
+    for cnok in "${codenameok[@]}"; do
+        [[ ${cnok} = "$1" ]] && codename="$1" && break
     done
     if [[ ! ${codename} ]]; then
-        echo -e "${error} Invalid codename '${mycodename}'" && exit 1
+        echo -e "${error} Invalid codename '$1'" && exit 1
     fi
 }
 
 test_username(){
-    myusername="$1"
-    [[ ${myusername} =~ ^[a-z]+[a-z0-9-]+[a-z0-9]$ ]] && username="${myusername}"
-    if [[ ! ${username} ]]; then
-        echo -e "${error} Invalid username '${myusername}'" && exit 1
+    [[ $1 =~ ^[a-z]+[a-z0-9-]+[a-z0-9]$ ]] && username="$1"
+    if [[ ! $1 ]]; then
+        echo -e "${error} Invalid username '$1'" && exit 1
     fi
 }
 
 test_hostname(){
-    myhostname="$1"
-    [[ ${myhostname} =~ ^[a-z0-9]+[a-z0-9-]+[a-z0-9]$ ]] && hostname="${myhostname}"
-    [[ ${#myhostname} -le 2 ]] && [[ ${myhostname} =~ ^[a-z0-9]+$ ]] && hostname="${myhostname}"
+    [[ $1 =~ ^[a-z0-9]+[a-z0-9-]+[a-z0-9]$ ]] && hostname="$1"
+    [[ ${#1} -le 2 ]] && [[ $1 =~ ^[a-z0-9]+$ ]] && hostname="$1"
     if [[ ! ${hostname} ]]; then
-        echo -e "${error} Invalid hostname '${myhostname}'" && exit 1
+        echo -e "${error} Invalid hostname '$1'" && exit 1
     fi
 }
 
@@ -103,7 +99,7 @@ build_iso(){
     sed "s/sid/${codename}/; s/liveuser/${username}/g; s/${codename}-custom/${hostname}/" \
         -i "${workfolder}"/auto/config
 
-    pushd "${workfolder}"
+    pushd "${workfolder}" || exit 1
     lb config
 
     echo -e "${ci}Building iso image...${c0}"
@@ -115,7 +111,7 @@ build_iso(){
     chown -R "${myuser}":"${mygroup}" "${scriptpath}"/*.iso
 
     lb clean --purge
-    popd
+    popd || exit 1
 
     echo -e "${done} iso image built: '${myiso}'"
 }

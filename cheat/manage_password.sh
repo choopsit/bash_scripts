@@ -8,7 +8,6 @@ cf="\e[32m"
 ci="\e[36m"
 
 error="${ce}Error${c0}:"
-done="${cf}Done${c0}:"
 
 usage(){
     echo -e "${ci}Usage${c0}:"
