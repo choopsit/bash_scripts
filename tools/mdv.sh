@@ -14,6 +14,7 @@ usage(){
     echo "./$(basename "$0") <FILE.md>"
     echo -e "${ci}Options${c0}:"
     echo " -h,--help: Print this help"
+    echo
 }
 
 define_colors(){
@@ -140,6 +141,17 @@ check_decoration_in_line(){
     line="${myline}"
 }
 
+format_md(){
+clear
+
+while read line; do
+    check_title
+    check_list
+    check_decoration_in_line
+    echo -e "${df}${line}${df}"
+done <"$1"
+}
+
 positionals=()
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -156,15 +168,5 @@ done
 [[ ${#positionals[@]} -ne 1 ]] &&
     echo -e "${error} Need a unique positional argument" && usage && exit 1
 
-myfile="${positionals[0]}"
-
 define_colors
-
-clear
-
-while read line; do
-    check_title
-    check_list
-    check_decoration_in_line
-    echo -e "${df}${line}${df}"
-done <"${myfile}"
+format_md "${positionals[0]}"
