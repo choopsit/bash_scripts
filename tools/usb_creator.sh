@@ -97,7 +97,7 @@ done
 [[ $(whoami) != root ]] && echo -e "${error} Need higher privileges" && usage && exit 1
 
 stable_codename=buster
-last_stable=10.5.0
+last_stable=10.6.0
 oldstable_codename=stretch
 last_oldstable=9.13.0
 testing_codename=bullseye
