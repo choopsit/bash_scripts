@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+
+description="Update GTK themes and icon themes from github"
+author="Choops <choopsbd@gmail.com>"
+
+c0="\e[0m"
+ce="\e[31m"
+cf="\e[32m"
+ci="\e[36m"
+
+error="${ce}Error${c0}:"
+done="${cf}Done${c0}:"
+
+set -e
+
+usage(){
+    echo -e "${ci}${description}\nUsage${c0}:"
+    echo "  $(basename "$0") [OPTION]"
+    echo -e "${ci}Options${c0}:"
+    echo "  -h|--help: Print this help"
+    echo
+}
+
+prerequisites(){
+    if ! { groups | grep -q sudo || [[ $USER = root ]] ; }; then
+        echo -e "${error} Need to be sudoer" && exit 1
+    fi
+    if ! (dpkg -l | grep -q libglib2.0-dev-bin); then
+        sudo apt update >/dev/null 2>&1
+        sudo apt install -yy libglib2.0-dev-bin &>/dev/null
+    fi
+}
+
+git_update(){
+    if [[ -d "${myfolder}" ]]; then
+        pushd "${myfolder}" &>/dev/null
+        sudo git pull -q --no-rebase
+        popd &>/dev/null
+    else
+        sudo git clone -q "$1" "${myfolder}"
+    fi
+}
+
+mojave_gtk(){
+    myfolder="${tmpfolder}"/mojave-gtk
+    git_update https://github.com/vinceliuice/Mojave-gtk-theme.git
+
+    pushd "${myfolder}" &>/dev/null
+    if dpkg -l | grep -q sassc; then
+        sudo ./install.sh >/dev/null
+    else
+        sudo ./install.sh
+    fi
+    popd &>/dev/null
+    echo -e "${done} Mojave-Gtk theme updated"
+}
+
+mcmojave_cursors(){
+    myfolder="${tmpfolder}"/mcmojave-cursors
+    git_update https://github.com/vinceliuice/McMojave-cursors.git
+
+    pushd "${myfolder}" &>/dev/null
+    sudo ./install.sh >/dev/null
+    popd &>/dev/null
+    echo -e "${done} McMojave cursors updated"
+}
+
+obsidian_icons(){
+    myfolder="${tmpfolder}"/obsidian-icons
+    git_update https://github.com/madmaxms/iconpack-obsidian.git
+
+    for iconth in Obsidian{"",-Gray}; do
+        sudo rm -rf /usr/share/icons/"${iconth}"
+        sudo cp -r "${myfolder}/${iconth}" /usr/share/icons/
+        sudo gtk-update-icon-cache /usr/share/icons/"${iconth}" &>/dev/null
+    done
+    echo -e "${done} Obsidian icons updated"
+}
+
+positionals=()
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -h|--help)
+            usage && exit 0 ;;
+        -*)
+            echo -e "${error} Unknown option '$1'" && usage && exit 1 ;;
+        *)
+            positionals+=("$1") ;;
+    esac
+    shift
+done
+
+[[ ${#positionals[@]} -gt 0 ]] &&
+    echo -e "${error} Bad argument(s) '${positionals[*]}'" && usage && exit 1
+
+tmpfolder=/tmp
+[[ $(hostname -s) = mrchat ]] && tmpfolder=/volumes/grodix/tmp
+
+prerequisites
+mojave_gtk
+mcmojave_cursors
+obsidian_icons
